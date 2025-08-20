@@ -64,37 +64,20 @@ export default function Home(props: Props) {
   // }, [])
 
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
+    <div className="font-sans min-h-screen gap-16 p-8">
+      <main className="flex flex-col gap-[32px] ">
+        <IFCViewer />  
+        {/* <Image
+          className="dark:invert "
           src="/gomore.png"
           alt="Gomore logo"
           width={180}
-          height={38}
+          height={16}
           priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            {" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              
-            </code>
-            .
-          </li>
-          <div 
-          style={{ display: "flex", alignItems: "center", columnGap: 15 }}
-          id="project-page-controls"
-          />
-          <li className="tracking-[-.01em]">
-            Three.js viewer is implemented in{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/ThreeViewer.tsx
-            </code>
-          </li>
-        </ol>
+        /> */}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
+
+        {/* <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
             className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
             href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
@@ -118,9 +101,9 @@ export default function Home(props: Props) {
           >
             Read our docs
           </a>
-        </div>
+        </div> */}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
+      <footer className="row-start-3 flex gap-[24px] flex-wrap ">
         <a
           className="flex items-center gap-2 hover:underline hover:underline-offset-4"
           href="https://gomore.com.tw/2015/index.html"
@@ -155,7 +138,7 @@ export default function Home(props: Props) {
       </footer>
       {/* <div id="viewer-container" className="fixed top-0 right-0 z-10 w-[800px] h-full bg-white shadow-lg" >        
       </div>     */}
-      <IFCViewer />  
+      
     </div>
   );
 }

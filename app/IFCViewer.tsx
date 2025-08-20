@@ -2,7 +2,6 @@
 import React, { useEffect, useRef } from "react";
 import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
-import * as FRAGS from "@thatopen/fragments";
 import * as BUI from "@thatopen/ui";
 import { PerspectiveCamera, OrthographicCamera } from "three";
 
@@ -10,15 +9,17 @@ export default function IFCViewer() {
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const componentsRef = useRef<OBC.Components | null>(null);
   const fragmentsRef = useRef<OBC.FragmentsManager | null>(null);
+  const ifcLoaderRef = useRef<OBC.IfcLoader | null>(null);
   const worldRef = useRef<any>(null);
 
+  // 初始化 Viewer
   useEffect(() => {
     if (!viewerRef.current) return;
 
     const components = new OBC.Components();
     componentsRef.current = components;
 
-    // world
+    // 建立 World
     const worlds = components.get(OBC.Worlds);
     const world = worlds.create();
     worldRef.current = world;
@@ -39,6 +40,7 @@ export default function IFCViewer() {
     camera.controls.setLookAt(3, 3, 3, 0, 0, 0);
     camera.updateAspect();
 
+    // 初始化 Components
     components.init();
 
     // Grids
@@ -47,10 +49,12 @@ export default function IFCViewer() {
     // IFC Loader
     const ifcLoader = components.get(OBC.IfcLoader);
     ifcLoader.setup();
+    ifcLoaderRef.current = ifcLoader;
 
-    // initialize FragmentsManager
+    // FragmentsManager 初始化
     const initFragments = async () => {
-      const githubUrl = "https://thatopen.github.io/engine_fragment/resources/worker.mjs";
+      const githubUrl =
+        "https://thatopen.github.io/engine_fragment/resources/worker.mjs";
       const fetchedUrl = await fetch(githubUrl);
       const workerBlob = await fetchedUrl.blob();
       const workerFile = new File([workerBlob], "worker.mjs", { type: "text/javascript" });
@@ -67,7 +71,6 @@ export default function IFCViewer() {
         fragments.core.update(true);
       });
     };
-
     initFragments();
 
     // Highlighter
@@ -88,34 +91,39 @@ export default function IFCViewer() {
     };
   }, []);
 
-  // upload IFC → Fragment
+  // 上傳 IFC → Fragment
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !fragmentsRef.current || !componentsRef.current || !worldRef.current) return;
+    if (!file || !ifcLoaderRef.current || !fragmentsRef.current || !worldRef.current) return;
 
-    const arrayBuffer = await file.arrayBuffer();
-    const modelId = `ifc_uploaded_${Date.now()}`;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const modelId = `ifc_uploaded_${Date.now()}`;
 
-    // 型別斷言 camera
-    const cam = worldRef.current.camera.three as PerspectiveCamera | OrthographicCamera;
+      // 直接使用 arrayBuffer
+      await fragmentsRef.current.core.load(arrayBuffer, { modelId });
 
-    // use FragmentsManager to load
-    await fragmentsRef.current.core.load(arrayBuffer, { modelId });
-    const model = fragmentsRef.current.list.get(modelId);
-    if (model) {
-      model.useCamera(cam);
-      worldRef.current.scene.three.add(model.object);
-      fragmentsRef.current.core.update(true);
+      const fragModel = fragmentsRef.current.list.get(modelId);
+      if (fragModel) {
+        const cam = worldRef.current.camera.three as PerspectiveCamera | OrthographicCamera;
+        fragModel.useCamera(cam);
+        worldRef.current.scene.three.add(fragModel.object);
+        fragmentsRef.current.core.update(true);
+      }
+    } catch (err) {
+      console.error("Failed to load IFC and convert to Fragment:", err);
     }
   };
 
-  // UI initialization
+  // UI 面板初始化
   useEffect(() => {
     BUI.Manager.init();
 
     const panel = BUI.Component.create<BUI.PanelSection>(() => {
       const onDisposeAll = () => {
-        fragmentsRef.current?.list.forEach((_, id) => fragmentsRef.current?.core.disposeModel(id));
+        fragmentsRef.current?.list.forEach((_, id) =>
+          fragmentsRef.current?.core.disposeModel(id)
+        );
       };
 
       const onExportAll = async () => {
@@ -158,23 +166,15 @@ export default function IFCViewer() {
   }, []);
 
   return (
-    <div style={{ width: "100%", height: "100vh", position: "relative" }}>
+    <div className="view flex flex-col" style={{ width: "100%", height: "100vh" }}>
       <input
+        title="Upload IFC File"
+        className="ifc-upload-input h-5"
         type="file"
         accept=".ifc"
         onChange={handleFileChange}
-        style={{
-          position: "absolute",
-          zIndex: 9999,
-          top: 10,
-          left: 10,
-          padding: "5px 10px",
-          background: "#fff",
-          border: "1px solid #ccc",
-          borderRadius: 4,
-        }}
       />
-      <div ref={viewerRef} id="viewer-container" style={{ width: "100%", height: "100%" }} />
+      <div ref={viewerRef} id="viewer-container" className="h-full" />
     </div>
   );
 }
