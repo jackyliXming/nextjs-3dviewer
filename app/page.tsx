@@ -1,7 +1,68 @@
+// app/page.tsx
+"use client";
 import Image from "next/image";
-import { ThreeViewer } from "./ThreeViewer";
+import * as React from "react";
+import IFCViewer from "./IFCViewer";
+// import  { IFCViewer }  from "./IFCViewer";
+// import * as BUI from "@thatopen/ui";
+// import * as CUI from "@thatopen/ui-obc";
+import { ProjectsManager } from "./ProjectsManager";
 
-export default function Home() {
+// const IFCViewer = dynamic(() => import("./IFCViewer"), { ssr: false });
+
+// declare global {
+//   namespace JSX {
+//     interface IntrinsicElements {
+//       "bim-grid": any;
+//       "bim-text-input": any;
+//       "bim-button": any;
+//       "bim-label": any;
+//       "bim-panel": any;
+//       "bim-panel-section": any;
+//       "bim-table": any;
+//       "bim-dropdown": any;
+//       "bim-option": any;
+//       "bim-toolbar": any;
+//       "bim-toolbar-section": any;
+//       "bim-toolbar-group": any;
+//       "bim-viewport": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+//     }
+//   }
+// }
+
+interface Props {
+  projectsManager: ProjectsManager
+}
+
+export default function Home(props: Props) {
+  // React.useEffect(() => {
+  //   (async () => {
+  //     const BUI = await import("@thatopen/ui");
+  //     BUI.Manager.init(); 
+  //   })();
+  // }, []);
+  
+  // const onImportProject = () => {
+  //   props.projectsManager.importFromJSON()
+  // }
+
+  // const importBtn = BUI.Component.create<BUI.Button>(() => {
+  //   return BUI.html `
+  //     <bim-button
+  //       id="import-projects-btn"
+  //       icon="iconoir:import"
+  //       @click=${onImportProject}
+  //     >
+  //     </bim-button>
+  //   `;
+  // })
+
+  // React.useEffect(() => {
+  //   const projectControls = document.getElementById("project-page-controls")
+  //   projectControls?.appendChild(importBtn)
+    
+  // }, [])
+
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
@@ -21,6 +82,10 @@ export default function Home() {
             </code>
             .
           </li>
+          <div 
+          style={{ display: "flex", alignItems: "center", columnGap: 15 }}
+          id="project-page-controls"
+          />
           <li className="tracking-[-.01em]">
             Three.js viewer is implemented in{" "}
             <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
@@ -88,9 +153,9 @@ export default function Home() {
         </a>
         
       </footer>
-      <div id="viewer-container" className="fixed top-0 right-0 z-10 w-[800px] h-full bg-white shadow-lg" >        
-      </div>    
-      <ThreeViewer />  
+      {/* <div id="viewer-container" className="fixed top-0 right-0 z-10 w-[800px] h-full bg-white shadow-lg" >        
+      </div>     */}
+      <IFCViewer />  
     </div>
   );
 }
