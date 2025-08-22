@@ -21,7 +21,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({
     <Switch
       isSelected={darkMode}
       onChange={toggleTheme}
-      color="success"
+      color="secondary"
       startContent={<MoonIcon size={18} />}
       endContent={<SunIcon size={18} />}
       size="lg"

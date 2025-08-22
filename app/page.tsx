@@ -20,7 +20,7 @@ export default function Home() {
 
       {/* <Sidebar darkMode={darkMode} toggleTheme={toggleTheme} /> */}
 
-      <HeaderToggle darkMode={darkMode} />
+      {/* <HeaderToggle darkMode={darkMode} /> */}
 
       <main className="flex flex-col gap-4 flex-1">
         <IFCViewer darkMode={darkMode} />

@@ -1,3 +1,4 @@
+// IFCViewer.tsx
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -6,6 +7,7 @@ import * as OBCF from "@thatopen/components-front";
 import { PerspectiveCamera, OrthographicCamera } from "three";
 import { Spinner } from "@heroui/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import HeaderToggle from "@/components/header";
 
 interface IFCViewerProps {
   darkMode: boolean;
@@ -14,6 +16,8 @@ interface IFCViewerProps {
 interface UploadedModel {
   id: string;
   name: string;
+  type: "ifc" | "frag" | "json";
+  data?: ArrayBuffer;
 }
 
 export default function IFCViewer({ darkMode }: IFCViewerProps) {
@@ -28,7 +32,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [uploadedModels, setUploadedModels] = useState<UploadedModel[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
+  
   useEffect(() => {
     if (!viewerRef.current) return;
 
@@ -65,10 +69,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
 
       await ifcLoader.setup({
         autoSetWasm: false,
-        wasm: {
-          path: "https://unpkg.com/web-ifc@0.0.70/",
-          absolute: true,
-        },
+        wasm: { path: "https://unpkg.com/web-ifc@0.0.70/", absolute: true },
       });
 
       const githubUrl =
@@ -115,12 +116,9 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
     init();
   }, []);
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !ifcLoaderRef.current || !fragmentsRef.current || !worldRef.current)
-      return;
+    if (!file || !ifcLoaderRef.current || !fragmentsRef.current || !worldRef.current) return;
 
     try {
       setProgress(0);
@@ -137,42 +135,107 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
       const uint8Array = new Uint8Array(arrayBuffer);
       const modelId = `ifc_uploaded_${Date.now()}`;
 
-      const fragModel = await ifcLoaderRef.current.load(
-        uint8Array,
-        false,
-        modelId,
-        {
-          instanceCallback: (importer: any) =>
-            console.log("IfcImporter ready", importer),
-          userData: {},
-        }
-      );
+      const fragModel = await ifcLoaderRef.current.load(uint8Array, false, modelId, {
+        instanceCallback: (importer: any) => console.log("IfcImporter ready", importer),
+        userData: {},
+      });
 
       clearInterval(progressInterval);
       setProgress(100);
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 300));
 
       worldRef.current.scene.three.add(fragModel.object);
       fragmentsRef.current.core.update(true);
-      fragModel.useCamera(
-        worldRef.current.camera.three as PerspectiveCamera | OrthographicCamera
-      );
+      fragModel.useCamera(worldRef.current.camera.three);
 
       setUploadedModels((prev) => [
         ...prev,
-        { id: modelId, name: file.name },
+        { id: modelId, name: file.name, type: "ifc", data: arrayBuffer },
       ]);
     } catch (err) {
-      console.error("Failed to load IFC via IfcLoader:", err);
+      console.error("Failed to load IFC:", err);
     } finally {
       setShowProgressModal(false);
     }
   };
 
+
+  const handleFragmentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !fragmentsRef.current || !worldRef.current) return;
+
+    try {
+      setProgress(0);
+      setShowProgressModal(true);
+
+      let simulatedProgress = 0;
+      const progressInterval = setInterval(() => {
+        simulatedProgress += Math.random() * 5;
+        if (simulatedProgress >= 98) simulatedProgress = 98;
+        setProgress(Math.floor(simulatedProgress));
+      }, 180);
+
+      const arrayBuffer = await file.arrayBuffer();
+      const modelId = `frag_uploaded_${Date.now()}`;
+
+      const fragModel = await fragmentsRef.current.core.load(arrayBuffer, { modelId });
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 500));
+
+      fragModel.useCamera(worldRef.current.camera.three);
+      worldRef.current.scene.three.add(fragModel.object);
+      fragmentsRef.current.core.update(true);
+
+      setUploadedModels((prev) => [
+        ...prev,
+        { id: modelId, name: file.name, type: "frag", data: arrayBuffer },
+      ]);
+    } finally {
+      setShowProgressModal(false);
+    }
+  };
+
+
+  const handleJSONUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setProgress(0);
+      setShowProgressModal(true);
+
+      let simulatedProgress = 0;
+      const progressInterval = setInterval(() => {
+        simulatedProgress += Math.random() * 5;
+        if (simulatedProgress >= 98) simulatedProgress = 98;
+        setProgress(Math.floor(simulatedProgress));
+      }, 180);
+
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const modelId = `json_uploaded_${Date.now()}`;
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 700));
+
+      console.log("Loaded JSON:", data);
+
+      setUploadedModels((prev) => [
+        ...prev,
+        { id: modelId, name: file.name, type: "json" },
+      ]);
+    } finally {
+      setShowProgressModal(false);
+    }
+  };
+
+
   const handleDownloadIFC = (model: UploadedModel) => {
-    const data = (ifcLoaderRef.current as any).getData?.(model.id);
-    if (!data) return;
-    const blob = new Blob([data], { type: "application/octet-stream" });
+    if (!model.data) return;
+    const blob = new Blob([model.data], { type: "application/octet-stream" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -180,6 +243,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
     a.click();
     URL.revokeObjectURL(url);
   };
+
 
   const downloadFragments = async () => {
     for (const [, model] of fragmentsRef.current!.list) {
@@ -212,23 +276,66 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
 
   return (
     <div className="flex w-full h-screen">
+      {/* Sidebar */}
       <aside
-        className={`transition-all duration-300 flex flex-col
-          ${sidebarCollapsed ? "w-16" : "w-60"}
-          ${darkMode ? "bg-gray-900 text-white" : "bg-blue-400 text-white"}`}
+        className={`transition-width duration-300 flex flex-col
+          ${darkMode ? "bg-gray-900 text-white" : "bg-indigo-400 text-white"}`}
+        style={{
+          width: sidebarCollapsed ? "64px" : "360px",
+          minWidth: sidebarCollapsed ? "64px" : "360px",
+        }}
       >
+        {!sidebarCollapsed && <HeaderToggle darkMode={darkMode} />}
+
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="self-end m-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="self-end m-1 p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
         >
           {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
 
         {!sidebarCollapsed && (
-          <h2 className="text-lg font-semibold mb-4 px-4">Uploaded Models</h2>
+          <div className="flex flex-col justify-center items-center gap-2 mt-2">
+            <label
+              className={` w-5/6 flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
+                ${darkMode ? "bg-blue-800 text-amber-100 hover:bg-blue-900" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+            >
+              Upload IFC File
+              <input type="file" accept=".ifc" onChange={IfcUpload} className="hidden" />
+            </label>
+
+            <label
+              className={` w-5/6 flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
+                ${darkMode ? "bg-green-800 text-amber-100 hover:bg-green-900" : "bg-green-600 text-white hover:bg-green-700"}`}
+            >
+              Upload Fragment File
+              <input type="file" accept=".frag" onChange={handleFragmentUpload} className="hidden" />
+            </label>
+
+            <label
+              className={` w-5/6 flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
+                ${darkMode ? "bg-yellow-700 text-amber-100 hover:bg-yellow-800" : "bg-yellow-600 text-white hover:bg-yellow-700"}`}
+            >
+              Upload JSON File
+              <input type="file" accept=".json" onChange={handleJSONUpload} className="hidden" />
+            </label>
+          </div>
         )}
-        <hr/>
-        <br/>
+
+        <br />
+
+        {!sidebarCollapsed && (
+          <h2
+            className={`text-lg font-semibold mb-4 px-4 ${
+              darkMode ? "text-amber-100" : "text-white"
+            }`}
+          >
+            Uploaded Models
+          </h2>
+        )}
+
+        <hr />
+        <br />
         <ul className="space-y-3 px-4 flex-1 overflow-auto">
           {!sidebarCollapsed &&
             uploadedModels.map((model) => (
@@ -255,6 +362,13 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
                       JSON
                     </button>
                   </div>
+                  <hr
+                    style={{
+                      height: "11px",
+                      border: "none",
+                      borderTop: `3px ridge ${darkMode ? "#fbbf29" : "#4cedef"}`,
+                    }}
+                  />
                 </div>
               </li>
             ))}
@@ -264,43 +378,8 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
 
       {/* Main Viewer */}
       <div className="flex flex-col flex-1">
-        <div className="flex justify-center items-center gap-2 mt-2">
-          <label
-          className="flex justify-center items-center
-            w-1/3
-            bg-blue-600 text-white font-medium
-            px-6 py-2
-            rounded-lg
-            cursor-pointer
-            hover:bg-blue-700
-            transition-colors duration-200
-            "
-          >
-            Upload IFC File
-            <input
-              type="file"
-              accept=".ifc"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </label>
-
-          <label
-            className="flex justify-center items-center
-                  w-1/3 bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200"
-            onClick={() => console.log("Button 1 clicked")}
-          >
-            Upload Fragment File
-          </label>
-          <label
-            className="flex justify-center items-center
-                  w-1/3 bg-yellow-600 hover:bg-yellow-700 text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200"
-            onClick={() => console.log("Button 2 clicked")}
-          >
-            Upload Json File
-          </label>
-        </div>
         
+
         <div ref={viewerRef} id="viewer-container" className="flex-1" />
 
         {showProgressModal && (
@@ -311,9 +390,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: darkMode
-                ? "rgba(0,0,0,0.7)"
-                : "rgba(0,0,0,0.5)",
+              backgroundColor: darkMode ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.5)",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -328,14 +405,11 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
                 borderRadius: "8px",
                 textAlign: "center",
                 color: darkMode ? "#facc15" : "#111",
-                boxShadow: darkMode
-                  ? "0 0 10px rgba(255,255,255,0.2)"
-                  : "0 0 10px rgba(0,0,0,0.1)",
+                boxShadow: darkMode ? "0 0 10px rgba(255,255,255,0.2)" : "0 0 10px rgba(0,0,0,0.1)",
               }}
             >
               <Spinner classNames={{ label: "text-foreground mt-4" }} variant="gradient" />
-
-              <p>Loading IFC: {progress}%</p>
+              <p>Loading: {progress}%</p>
               <div
                 style={{
                   width: "100%",

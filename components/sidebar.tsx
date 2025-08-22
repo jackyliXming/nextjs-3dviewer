@@ -51,6 +51,7 @@ export default function Sidebar({ darkMode, toggleTheme }: SidebarProps) {
         ${collapsed ? "w-16" : "w-64"}
         ${darkMode ? "bg-gray-800 text-white" : "bg-indigo-400 text-gray-800"}`}
     >
+
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="absolute top-4 right-4 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
