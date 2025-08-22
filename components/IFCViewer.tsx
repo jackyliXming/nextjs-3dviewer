@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import { PerspectiveCamera, OrthographicCamera } from "three";
+import { Spinner } from "@heroui/react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface IFCViewerProps {
   darkMode: boolean;
@@ -25,6 +27,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
   const [progress, setProgress] = useState<number>(0);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [uploadedModels, setUploadedModels] = useState<UploadedModel[]>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -179,16 +182,16 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
   };
 
   const downloadFragments = async () => {
-  for (const [, model] of fragmentsRef.current!.list) {
-    const fragsBuffer = await model.getBuffer(false);
-    const file = new File([fragsBuffer], `${model.modelId}.frag`);
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(file);
-    link.download = file.name;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }
-};
+    for (const [, model] of fragmentsRef.current!.list) {
+      const fragsBuffer = await model.getBuffer(false);
+      const file = new File([fragsBuffer], `${model.modelId}.frag`);
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(file);
+      link.download = file.name;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  };
 
   const handleDownloadJSON = (model: UploadedModel) => {
     const json = {
@@ -209,48 +212,60 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
 
   return (
     <div className="flex w-full h-screen">
-      {/* Sidebar */}
-      <div
-        className={`w-60 p-4 border-r ${
-          darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-black"
-        }`}
+      <aside
+        className={`transition-all duration-300 flex flex-col
+          ${sidebarCollapsed ? "w-16" : "w-60"}
+          ${darkMode ? "bg-gray-900 text-white" : "bg-blue-400 text-white"}`}
       >
-        <h2 className="text-lg font-semibold mb-4">Uploaded Models</h2>
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="self-end m-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+        >
+          {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
 
-        <ul className="space-y-3">
-          {uploadedModels.map((model) => (
-            <li key={model.id}>
-              <div className="flex justify-between items-center">
-                <span className="cursor-pointer hover:underline">{model.name}</span>
-                <div className="flex space-x-1">
-                  <button
-                    className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
-                    onClick={() => handleDownloadIFC(model)}
-                  >
-                    IFC
-                  </button>
-                  <button
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs"
-                    onClick={() => downloadFragments()}
-                  >
-                    Fragment
-                  </button>
-                  <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
-                    onClick={() => handleDownloadJSON(model)}
-                  >
-                    JSON
-                  </button>
+        {!sidebarCollapsed && (
+          <h2 className="text-lg font-semibold mb-4 px-4">Uploaded Models</h2>
+        )}
+        <hr/>
+        <br/>
+        <ul className="space-y-3 px-4 flex-1 overflow-auto">
+          {!sidebarCollapsed &&
+            uploadedModels.map((model) => (
+              <li key={model.id}>
+                <div className="flex flex-col gap-1">
+                  <span className="cursor-pointer hover:underline">{model.name}</span>
+                  <div className="flex space-x-1">
+                    <button
+                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                      onClick={() => handleDownloadIFC(model)}
+                    >
+                      IFC
+                    </button>
+                    <button
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs"
+                      onClick={() => downloadFragments()}
+                    >
+                      Fragment
+                    </button>
+                    <button
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                      onClick={() => handleDownloadJSON(model)}
+                    >
+                      JSON
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            ))}
         </ul>
-      </div>
+      </aside>
+
 
       {/* Main Viewer */}
       <div className="flex flex-col flex-1">
-        <label
+        <div className="flex justify-center items-center gap-2 mt-2">
+          <label
           className="flex justify-center items-center
             w-1/3
             bg-blue-600 text-white font-medium
@@ -259,17 +274,33 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
             cursor-pointer
             hover:bg-blue-700
             transition-colors duration-200
-            mx-auto mt-2"
-        >
-          Upload IFC File
-          <input
-            type="file"
-            accept=".ifc"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </label>
+            "
+          >
+            Upload IFC File
+            <input
+              type="file"
+              accept=".ifc"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
 
+          <label
+            className="flex justify-center items-center
+                  w-1/3 bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200"
+            onClick={() => console.log("Button 1 clicked")}
+          >
+            Upload Fragment File
+          </label>
+          <label
+            className="flex justify-center items-center
+                  w-1/3 bg-yellow-600 hover:bg-yellow-700 text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200"
+            onClick={() => console.log("Button 2 clicked")}
+          >
+            Upload Json File
+          </label>
+        </div>
+        
         <div ref={viewerRef} id="viewer-container" className="flex-1" />
 
         {showProgressModal && (
@@ -302,9 +333,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
                   : "0 0 10px rgba(0,0,0,0.1)",
               }}
             >
-              <div className="flex gap-4 items-center justify-center h-32">
-                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
+              <Spinner classNames={{ label: "text-foreground mt-4" }} variant="gradient" />
 
               <p>Loading IFC: {progress}%</p>
               <div
