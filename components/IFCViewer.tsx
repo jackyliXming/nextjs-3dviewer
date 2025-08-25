@@ -1,4 +1,3 @@
-// IFCViewer.tsx
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -6,7 +5,7 @@ import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import { PerspectiveCamera, OrthographicCamera } from "three";
 import { Spinner } from "@heroui/react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Focus, RefreshCcw } from "lucide-react";
 import HeaderToggle from "@/components/header";
 
 interface IFCViewerProps {
@@ -32,11 +31,12 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [uploadedModels, setUploadedModels] = useState<UploadedModel[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+
   useEffect(() => {
     if (!viewerRef.current) return;
 
-    const init = async () => {
+    const init = async () => {      
+
       const components = new OBC.Components();
       componentsRef.current = components;
 
@@ -100,6 +100,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
       const highlighter = components.get(OBCF.Highlighter);
       highlighter.setup({ world });
       highlighter.zoomToSelection = true;
+      components.get(OBC.Hider);
 
       const handleResize = () => {
         renderer.resize();
@@ -115,6 +116,42 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
 
     init();
   }, []);
+
+  const onToggleVisibility = async () => {
+    const highlighter = componentsRef.current?.get(OBCF.Highlighter);
+    const fragments = fragmentsRef.current;
+    if (!highlighter || !fragments) return;
+
+    const selection = highlighter.selection.select;    
+    if (!selection || Object.keys(selection).length === 0) return;
+
+    for (const modelId in selection) {
+      const model = fragments.list.get(modelId);
+      if (!model) continue;
+
+      const localIds = Array.from(selection[modelId]);
+      if (localIds.length === 0) continue;
+
+      const visibility = await model.getVisible(localIds);
+      const isAllVisible = visibility.every(v => v);
+
+      await model.setVisible(localIds, !isAllVisible);
+    }
+  };
+
+  const onIsolate = () => {
+    const highlighter = componentsRef.current?.get(OBCF.Highlighter);
+    const hider = componentsRef.current?.get(OBC.Hider);
+    if (!highlighter || !hider) return;
+    const selection = highlighter.selection.select;
+    hider.isolate(selection);
+  };
+
+  const onShow = () => {
+    const hider = componentsRef.current?.get(OBC.Hider);
+    if (!hider) return;
+    hider.set(true);
+  };
 
   const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -159,7 +196,6 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
     }
   };
 
-
   const handleFragmentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !fragmentsRef.current || !worldRef.current) return;
@@ -197,7 +233,6 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
     }
   };
 
-
   const handleJSONUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -232,7 +267,6 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
     }
   };
 
-
   const handleDownloadIFC = (model: UploadedModel) => {
     if (!model.data) return;
     const blob = new Blob([model.data], { type: "application/octet-stream" });
@@ -243,7 +277,6 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
     a.click();
     URL.revokeObjectURL(url);
   };
-
 
   const downloadFragments = async () => {
     for (const [, model] of fragmentsRef.current!.list) {
@@ -303,7 +336,6 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
               Upload IFC File
               <input type="file" accept=".ifc" onChange={IfcUpload} className="hidden" />
             </label>
-
             <label
               className={` w-5/6 flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
                 ${darkMode ? "bg-green-800 text-amber-100 hover:bg-green-900" : "bg-green-600 text-white hover:bg-green-700"}`}
@@ -311,7 +343,6 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
               Upload Fragment File
               <input type="file" accept=".frag" onChange={handleFragmentUpload} className="hidden" />
             </label>
-
             <label
               className={` w-5/6 flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
                 ${darkMode ? "bg-yellow-700 text-amber-100 hover:bg-yellow-800" : "bg-yellow-600 text-white hover:bg-yellow-700"}`}
@@ -336,6 +367,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
 
         <hr />
         <br />
+
         <ul className="space-y-3 px-4 flex-1 overflow-auto">
           {!sidebarCollapsed &&
             uploadedModels.map((model) => (
@@ -344,19 +376,22 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
                   <span className="cursor-pointer hover:underline">{model.name}</span>
                   <div className="flex space-x-1">
                     <button
-                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                      className={`${darkMode ? "bg-blue-800 text-amber-100 hover:bg-blue-900" : "bg-blue-600 text-white hover:bg-blue-700"} 
+                      px-2 py-1 rounded text-xs`}
                       onClick={() => handleDownloadIFC(model)}
                     >
                       IFC
                     </button>
                     <button
-                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs"
+                      className={`${darkMode ? "bg-green-800 text-amber-100 hover:bg-green-900" : "bg-green-600 text-white hover:bg-green-700"} 
+                      px-2 py-1 rounded text-xs`}
                       onClick={() => downloadFragments()}
                     >
                       Fragment
                     </button>
                     <button
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                      className={`${darkMode ? "bg-yellow-700 text-amber-100 hover:bg-yellow-800" : "bg-yellow-600 text-white hover:bg-yellow-700"} 
+                      px-2 py-1 rounded text-xs`}
                       onClick={() => handleDownloadJSON(model)}
                     >
                       JSON
@@ -375,12 +410,41 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
         </ul>
       </aside>
 
-
       {/* Main Viewer */}
-      <div className="flex flex-col flex-1">
-        
-
+      <div className="flex flex-col flex-1">        
         <div ref={viewerRef} id="viewer-container" className="flex-1" />
+
+        <div
+          className={`absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4 px-4 py-2 rounded-xl shadow-lg
+            ${darkMode ? "bg-gray-800 text-amber-100" : "bg-white text-gray-900"}`}
+        >
+          <button
+            onClick={onToggleVisibility}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition
+              ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-600 hover:bg-blue-700"} text-white`}
+          >
+            <Eye size={18} />
+            Toggle Visibility
+          </button>
+
+          <button
+            onClick={onIsolate}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition
+              ${darkMode ? "bg-green-800 hover:bg-green-900" : "bg-green-600 hover:bg-green-700"} text-white`}
+          >
+            <Focus size={18} />
+            Isolate
+          </button>
+
+          <button
+            onClick={onShow}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition
+              ${darkMode ? "bg-yellow-700 hover:bg-yellow-800" : "bg-yellow-600 hover:bg-yellow-700"} text-white`}
+          >
+            <RefreshCcw size={18} />
+            Show All
+          </button>
+        </div>
 
         {showProgressModal && (
           <div

@@ -55,52 +55,50 @@ export const Navbar = ({ darkMode, toggleTheme }: NavbarProps) => {
 
   return (
     <HeroUINavbar maxWidth="xl" position="sticky">
-      <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-        <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Logo />
-            <p className="font-bold text-inherit">Gomore</p>
-          </NextLink>
-        </NavbarBrand>
-        <ul className="hidden lg:flex gap-4 justify-start ml-2">
-          {siteConfig.navItems.map((item) => (
-            <NavbarItem key={item.href}>
-              <NextLink
-                className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium",
-                )}
-                color="foreground"
-                href={item.href}
-              >
-                {item.label}
-              </NextLink>
-            </NavbarItem>
-          ))}
-        </ul>
-      </NavbarContent>
+      <NavbarContent className="basis-1/3 sm:basis-full" justify="start">
+          <NavbarBrand as="li" className="gap-3 max-w-fit">
+            <NextLink className="flex justify-start items-center gap-1" href="/">
+              <Logo />
+              <p className="font-bold text-inherit">Gomore</p>
+            </NextLink>
+          </NavbarBrand>
+          <ul className="hidden lg:flex gap-4 justify-start ml-2">
+            {siteConfig.navItems.map((item) => (
+              <NavbarItem key={item.href}>
+                <NextLink
+                  className={clsx(
+                    linkStyles({ color: "foreground" }),
+                    "data-[active=true]:text-primary data-[active=true]:font-medium",
+                  )}
+                  color="foreground"
+                  href={item.href}
+                >
+                  {item.label}
+                </NextLink>
+              </NavbarItem>
+            ))}
+          </ul>
+        </NavbarContent>
 
-      <NavbarContent
-        className="hidden sm:flex basis-1/5 sm:basis-full"
-        justify="end"
-      >
-        <NavbarItem className="hidden lg:flex">{searchInput}</NavbarItem>
-        <NavbarItem className="hidden md:flex">
-        </NavbarItem>
-        <NavbarItem className="hidden sm:flex gap-2">          
-          <ThemeSwitch darkMode={darkMode} toggleTheme={toggleTheme} />
-        </NavbarItem>
-      </NavbarContent>
+        <NavbarContent className="hidden sm:flex basis-1/3 sm:basis-full" justify="center">
+          <NavbarItem className="flex">{searchInput}</NavbarItem>
+        </NavbarContent>
 
-      <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
+        <NavbarContent className="hidden sm:flex basis-1/3 sm:basis-full" justify="end">
+          <NavbarItem className="gap-2">
+            <ThemeSwitch darkMode={darkMode} toggleTheme={toggleTheme} />
+          </NavbarItem>
+        </NavbarContent>
+
+      {/* <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
         <Link isExternal aria-label="Github" href={siteConfig.links.github}>
           <GithubIcon className="text-default-500" />
         </Link>
         <ThemeSwitch darkMode={darkMode} toggleTheme={toggleTheme} />
         <NavbarMenuToggle />
-      </NavbarContent>
+      </NavbarContent> */}
 
-      <NavbarMenu>
+      {/* <NavbarMenu>
         {searchInput}
         <div className="mx-4 mt-2 flex flex-col gap-2">
           {siteConfig.navMenuItems.map((item, index) => (
@@ -121,7 +119,7 @@ export const Navbar = ({ darkMode, toggleTheme }: NavbarProps) => {
             </NavbarMenuItem>
           ))}
         </div>
-      </NavbarMenu>
+      </NavbarMenu> */}
     </HeroUINavbar>
   );
 };
