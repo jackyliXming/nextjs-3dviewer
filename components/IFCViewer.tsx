@@ -20,6 +20,15 @@ interface UploadedModel {
   data?: ArrayBuffer;
 }
 
+interface ElementInfoProps {
+  element: {
+    model: string;
+    localId: number;
+    attributes: Record<string, { value: any; type?: string }>;
+    propertySets: Record<string, Record<string, any>>;
+  };
+}
+
 type ItemProps = Record<string, any>;
 type PsetDict = Record<string, Record<string, any>>;
 
@@ -42,6 +51,10 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
   const [selectedLocalId, setSelectedLocalId] = useState<number | null>(null);
   const [selectedAttrs, setSelectedAttrs] = useState<ItemProps | null>(null);
   const [selectedPsets, setSelectedPsets] = useState<PsetDict | null>(null);
+  const [projection, setProjection] = React.useState<"Perspective" | "Orthographic">("Perspective");
+  const [navigation, setNavigation] = React.useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
+  const [message, setMessage] = useState<string | null>(null);
+  const [showMessage, setShowMessage] = useState(false);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -386,6 +399,15 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
     URL.revokeObjectURL(url);
   };
 
+  const handleNavigationChange = (mode: string) => {
+    setMessage(`Navigation Mode: ${mode}`);
+    setShowMessage(true);
+
+    setTimeout(() => {
+      setShowMessage(false);
+    }, 2000);
+  };
+
   return (
     <div className="flex w-full h-screen">
       {/* Sidebar */}
@@ -480,7 +502,127 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
       {/* Main Viewer */}
       <div className="flex flex-col flex-1">
         <div ref={viewerRef} id="viewer-container" className="flex-1" />
+        
+        {/* Camera Controls */}
+        <div
+          className={`absolute top-15 left-1/2 transform -translate-x-1/2 flex gap-6 px-6 py-3 rounded-xl shadow-lg
+            ${darkMode ? "bg-gray-800 text-amber-100" : "bg-white text-gray-900"}`}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <span className="font-medium">Projection</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  worldRef.current?.camera.projection.set("Perspective");
+                  setProjection("Perspective");
+                }}
+                disabled={projection === "Perspective"}
+                className={`px-3 py-2 rounded-lg 
+                  ${projection === "Perspective"
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+              >
+                Perspective
+              </button>
 
+              <button
+                onClick={() => {
+                  if (navigation === "FirstPerson"){
+                    worldRef.current?.camera.set("Orbit");
+                    setNavigation("Orbit");
+                    handleNavigationChange("Orbit");
+                  }
+                  worldRef.current?.camera.projection.set("Orthographic");
+                  setProjection("Orthographic");
+                }}
+                disabled={projection === "Orthographic"}
+                className={`px-3 py-2 rounded-lg 
+                  ${projection === "Orthographic"
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+              >
+                Orthographic
+              </button>
+            </div>
+          </div>
+
+          <div className={`w-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
+
+          <div className="flex flex-col items-center gap-2">
+            <span className="font-medium">Navigation Mode</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  worldRef.current?.camera.set("Orbit");
+                  setNavigation("Orbit");
+                  handleNavigationChange("Orbit");
+                }}
+                disabled={navigation === "Orbit"}
+                className={`px-3 py-2 rounded-lg 
+                  ${navigation === "Orbit"
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-purple-600 text-white hover:bg-purple-700"}`}
+              >
+                Orbit
+              </button>
+
+              <button
+                onClick={() => {
+                  worldRef.current?.camera.set("FirstPerson");
+                  setNavigation("FirstPerson");
+                  handleNavigationChange("FirstPerson");
+                }}
+                disabled={navigation === "FirstPerson" || projection === "Orthographic"}
+                className={`px-3 py-2 rounded-lg 
+                  ${(navigation === "FirstPerson" || projection === "Orthographic")
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-purple-600 text-white hover:bg-purple-700"}`}
+              >
+                First Person
+              </button>
+
+              <button
+                onClick={() => {
+                  worldRef.current?.camera.set("Plan");
+                  setNavigation("Plan");
+                  handleNavigationChange("Plan");
+                }}
+                disabled={navigation === "Plan"}
+                className={`px-3 py-2 rounded-lg 
+                  ${navigation === "Plan"
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-purple-600 text-white hover:bg-purple-700"}`}
+              >
+                Plan
+              </button>
+            </div>
+          </div>
+
+          <div className={`w-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
+
+          <div className="flex flex-col justify-center items-center gap-2">
+            <button
+              onClick={() => worldRef.current?.camera.fitToItems()}
+              className="px-3 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700"
+            >
+              Fit to Model
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Mode Message */}
+        {message && (
+          <div
+            className={`absolute top-12 left-1/2 transform -translate-x-1/2 
+            px-6 py-3 rounded-xl bg-black text-white text-lg font-medium 
+            transition-opacity duration-1000
+            ${showMessage ? "opacity-80" : "opacity-0"}`}
+          >
+            {message}
+          </div>
+        )}
+
+        {/* Action Buttons */}
         <div
           className={`absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4 px-4 py-2 rounded-xl shadow-lg
             ${darkMode ? "bg-gray-800 text-amber-100" : "bg-white text-gray-900"}`}
@@ -520,7 +662,7 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
               ${darkMode ? "bg-gray-900 text-amber-100 border-gray-700" : "bg-white text-gray-900 border-gray-200"}`}
           >
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold">Element Info</h3>
+              <h3 className="text-2xl font-semibold">Element Info</h3>
               <button
                 onClick={async () => {
                   setInfoOpen(false);
@@ -533,20 +675,29 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
               </button>
             </div>
 
-            <div className="text-sm opacity-80 mb-3">
+            <div className="text-l opacity-80 mb-3">
               {selectedModelId ? `Model: ${selectedModelId}` : ""}
               <br/>
               {selectedLocalId !== null ? ` Local ID: ${selectedLocalId}` : ""}
             </div>
 
             {infoLoading ? (
-              <div className="text-sm opacity-70">Loading properties…</div>
+              <div className="text-sm opacity-70">Loading…</div>
             ) : (
               <>
                 <h4 className="font-semibold mb-1">Attributes</h4>
                 {selectedAttrs ? (
                   <div className={`text-xs ${darkMode ? "bg-gray-800" : "bg-gray-100"} rounded p-2 mb-4`}>
-                    <pre>{JSON.stringify(selectedAttrs, null, 2)}</pre>
+                    <ul className="space-y-1">
+                      {Object.entries(selectedAttrs).filter(([key]) => !["_guid", "_localId"].includes(key)).map(([key, val]) => (
+                        <li key={key} className="flex justify-between border-b border-gray-600/30 pb-1">
+                          <span className={`flex items-center gap-2 px-3 py-2 rounded-lg ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-600 hover:bg-blue-700"} text-white`}>{key}</span>
+                          <br/>                          
+                          <span className="flex items-center px-2 py-1">{String(val?.value ?? "")}</span>
+                          {val?.type && <span className={`flex items-center gap-2 px-2 py-2 rounded-lg text-gray-400 ml-2 ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}>({val.type})</span>}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 ) : (
                   <div className="text-sm opacity-60 mb-4">No attributes.</div>
@@ -556,11 +707,17 @@ export default function IFCViewer({ darkMode }: IFCViewerProps) {
                 {selectedPsets && Object.keys(selectedPsets).length > 0 ? (
                   <div className="space-y-3">
                     {Object.entries(selectedPsets).map(([pset, props]) => (
-                      <div key={pset}>
-                        <div className="font-medium">{pset}</div>
-                        <div className={`text-xs ${darkMode ? "bg-gray-800" : "bg-gray-100"} rounded p-2`}>
-                          <pre>{JSON.stringify(props, null, 2)}</pre>
-                        </div>
+                      <div key={pset} className="mb-2">
+                        <div className="font-medium mb-1">{pset}</div>
+                        <ul className={`text-xs ${darkMode ? "bg-gray-800" : "bg-gray-100"} rounded p-2 space-y-1`}>
+                          {Object.entries(props).map(([propKey, value]) => (
+                            <li key={propKey} className="flex justify-between border-b border-gray-600/30 pb-1">
+                              <span className={`flex items-center gap-2 px-4 py-2 rounded-lg ${darkMode ? "bg-green-800 hover:bg-green-900" : "bg-green-600 hover:bg-green-700"} text-white`}>{propKey}</span>
+                              <br/>
+                              <span className="flex items-center px-2">{String(value)}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     ))}
                   </div>
