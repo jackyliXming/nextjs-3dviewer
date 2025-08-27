@@ -1,0 +1,449 @@
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+import * as OBC from "@thatopen/components";
+import * as OBCF from "@thatopen/components-front";
+import * as FRAGS from "@thatopen/fragments";
+import { PerspectiveCamera, OrthographicCamera, Vector2, Color } from "three";
+import IFCViewerUI from "@/components/IFCViewer/ViewerUI";
+import IFCInfoPanel from "@/components/IFCViewer/InfoPanel";
+import ModelManager from "@/components/IFCViewer/ModelManager";
+import LoadingModal from "@/components/IFCViewer/LoadingModal";
+import ActionButtons from "@/components/IFCViewer/ActionButtons";
+import CameraControls from "@/components/IFCViewer/CameraControls";
+
+interface UploadedModel {
+  id: string;
+  name: string;
+  type: "ifc" | "frag" | "json";
+  data?: ArrayBuffer;
+}
+
+type ItemProps = Record<string, any>;
+type PsetDict = Record<string, Record<string, any>>;
+
+export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) {
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const componentsRef = useRef<OBC.Components | null>(null);
+  const fragmentsRef = useRef<OBC.FragmentsManager | null>(null);
+  const ifcLoaderRef = useRef<OBC.IfcLoader | null>(null);
+  const worldRef = useRef<any>(null);
+  const cameraRef = useRef<OBC.OrthoPerspectiveCamera | null>(null);
+
+  const [progress, setProgress] = useState<number>(0);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [uploadedModels, setUploadedModels] = useState<UploadedModel[]>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoLoading, setInfoLoading] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [selectedLocalId, setSelectedLocalId] = useState<number | null>(null);
+  const [selectedAttrs, setSelectedAttrs] = useState<ItemProps | null>(null);
+  const [selectedPsets, setSelectedPsets] = useState<PsetDict | null>(null);
+  const [projection, setProjection] = React.useState<"Perspective" | "Orthographic">("Perspective");
+  const [navigation, setNavigation] = React.useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!viewerRef.current) return;
+
+    const init = async () => {
+      const components = new OBC.Components();
+      componentsRef.current = components;
+
+      const worlds = components.get(OBC.Worlds);
+      const world = worlds.create();
+      worldRef.current = world;
+
+      const scene = new OBC.SimpleScene(components);
+      world.scene = scene;
+      scene.setup();
+      scene.three.background = null;
+
+      const renderer = new OBCF.PostproductionRenderer(components, viewerRef.current!);
+      world.renderer = renderer;
+
+      const camera = new OBC.OrthoPerspectiveCamera(components);
+      world.camera = camera;
+      await camera.controls.setLookAt(3, 3, 3, 0, 0, 0);
+      camera.updateAspect();
+      cameraRef.current = camera;
+
+      components.init();
+      components.get(OBC.Grids).create(world);
+
+      const ifcLoader = components.get(OBC.IfcLoader);
+      ifcLoaderRef.current = ifcLoader;
+
+      await ifcLoader.setup({
+        autoSetWasm: false,
+        wasm: { path: "https://unpkg.com/web-ifc@0.0.70/", absolute: true },
+      });
+
+      const githubUrl = "https://thatopen.github.io/engine_fragment/resources/worker.mjs";
+      const fetchedUrl = await fetch(githubUrl);
+      const workerBlob = await fetchedUrl.blob();
+      const workerFile = new File([workerBlob], "worker.mjs", { type: "text/javascript" });
+      const workerUrl = URL.createObjectURL(workerFile);
+
+      const fragments = components.get(OBC.FragmentsManager);
+      fragments.init(workerUrl);
+      fragmentsRef.current = fragments;
+
+      camera.controls.addEventListener("update", () => {
+        fragments.core.update(true);
+      });
+
+      fragments.list.onItemSet.add(({ value: model }) => {
+        const cam = world.camera.three as PerspectiveCamera | OrthographicCamera;
+        model.useCamera(cam);
+        world.scene.three.add(model.object);
+        fragments.core.update(true);
+      });
+
+      const highlighter = components.get(OBCF.Highlighter);
+      highlighter.setup({ world });
+      highlighter.zoomToSelection = true;
+
+      components.get(OBC.Hider);
+
+      const handleClick = async (event: MouseEvent) => {
+        if (!fragmentsRef.current || !worldRef.current?.renderer) return;
+
+        const dom = worldRef.current.renderer.three.domElement as HTMLCanvasElement;
+        const mouse = new Vector2(event.clientX, event.clientY);
+
+        let hit: { modelId: string; localId: number } | null = null;
+        for (const [id, model] of fragmentsRef.current.list) {
+          const result = await model.raycast({
+            camera: worldRef.current.camera.three,
+            mouse,
+            dom,
+          });
+          if (result) {
+            hit = { modelId: id, localId: result.localId };
+            break;
+          }
+        }
+
+        if (!hit) {
+          setInfoOpen(false);
+          setSelectedModelId(null);
+          setSelectedLocalId(null);
+          setSelectedAttrs(null);
+          setSelectedPsets(null);
+          fragmentsRef.current.core.update(true);
+          return;
+        }
+
+        const model = fragmentsRef.current.list.get(hit.modelId);
+        if (!model) return;
+
+        try {
+          setInfoLoading(true);
+          setInfoOpen(true);
+          setSelectedModelId(hit.modelId);
+          setSelectedLocalId(hit.localId);
+
+          const [attrs] = await model.getItemsData([hit.localId], {
+            attributesDefault: true,
+          });
+          setSelectedAttrs(attrs ?? null);
+
+          const psetsRaw = await getItemPsets(model, hit.localId);
+          setSelectedPsets(formatItemPsets(psetsRaw));
+
+          fragmentsRef.current.core.update(true);
+        } finally {
+          setInfoLoading(false);
+        }
+      };
+
+      viewerRef.current!.addEventListener("click", handleClick);
+
+      const handleResize = () => {
+        renderer.resize();
+        camera.updateAspect();
+      };
+      window.addEventListener("resize", handleResize);
+
+      return () => {
+        viewerRef.current?.removeEventListener("click", handleClick);
+        window.removeEventListener("resize", handleResize);
+        components.dispose();
+      };
+    };
+
+    init();
+  }, []);
+
+  const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !ifcLoaderRef.current || !fragmentsRef.current || !worldRef.current) return;
+
+    try {
+      setProgress(0);
+      setShowProgressModal(true);
+
+      let simulatedProgress = 0;
+      const progressInterval = setInterval(() => {
+        simulatedProgress += Math.random() * 5;
+        if (simulatedProgress >= 98) simulatedProgress = 98;
+        setProgress(Math.floor(simulatedProgress));
+      }, 180);
+
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const modelId = `ifc_uploaded_${Date.now()}`;
+
+      const fragModel = await ifcLoaderRef.current.load(uint8Array, false, modelId, {
+        instanceCallback: (importer: any) => console.log("IfcImporter ready", importer),
+        userData: {},
+      });
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 300));
+
+      worldRef.current.scene.three.add(fragModel.object);
+      fragmentsRef.current.core.update(true);
+      fragModel.useCamera(worldRef.current.camera.three);
+
+      setUploadedModels((prev) => [...prev, { id: modelId, name: file.name, type: "ifc", data: arrayBuffer }]);
+    } catch (err) {
+      console.error("Failed to load IFC:", err);
+    } finally {
+      setShowProgressModal(false);
+    }
+  };
+  
+  const handleFragmentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !fragmentsRef.current || !worldRef.current) return;
+
+    try {
+      setProgress(0);
+      setShowProgressModal(true);
+
+      let simulatedProgress = 0;
+      const progressInterval = setInterval(() => {
+        simulatedProgress += Math.random() * 5;
+        if (simulatedProgress >= 98) simulatedProgress = 98;
+        setProgress(Math.floor(simulatedProgress));
+      }, 180);
+
+      const arrayBuffer = await file.arrayBuffer();
+      const modelId = `frag_uploaded_${Date.now()}`;
+
+      const fragModel = await fragmentsRef.current.core.load(arrayBuffer, { modelId });
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 500));
+
+      fragModel.useCamera(worldRef.current.camera.three);
+      worldRef.current.scene.three.add(fragModel.object);
+      fragmentsRef.current.core.update(true);
+
+      setUploadedModels((prev) => [...prev, { id: modelId, name: file.name, type: "frag", data: arrayBuffer }]);
+    } finally {
+      setShowProgressModal(false);
+    }
+  };
+  
+  const handleJSONUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setProgress(0);
+      setShowProgressModal(true);
+
+      let simulatedProgress = 0;
+      const progressInterval = setInterval(() => {
+        simulatedProgress += Math.random() * 5;
+        if (simulatedProgress >= 98) simulatedProgress = 98;
+        setProgress(Math.floor(simulatedProgress));
+      }, 180);
+
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const modelId = `json_uploaded_${Date.now()}`;
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 700));
+
+      console.log("Loaded JSON:", data);
+
+      setUploadedModels((prev) => [...prev, { id: modelId, name: file.name, type: "json" }]);
+    } finally {
+      setShowProgressModal(false);
+    }
+  };
+  
+  const handleDownloadIFC = (model: UploadedModel) => {
+    if (!model.data) return;
+    const blob = new Blob([model.data], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = model.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  
+  const downloadFragments = async () => {
+    for (const [, model] of fragmentsRef.current!.list) {
+      const fragsBuffer = await model.getBuffer(false);
+      const file = new File([fragsBuffer], `${model.modelId}.frag`);
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(file);
+      link.download = file.name;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  };
+  
+  const handleDownloadJSON = (model: UploadedModel) => {
+    const json = { id: model.id, name: model.name, date: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${model.name}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getItemPsets = async (model: any, localId: number) => {
+    const [data] = await model.getItemsData([localId], {
+        attributesDefault: false,
+        attributes: ["Name", "NominalValue"],
+        relations: {
+        IsDefinedBy: { attributes: true, relations: true },
+        DefinesOcurrence: { attributes: false, relations: false },
+        },
+    });
+    return (data?.IsDefinedBy as FRAGS.ItemData[]) ?? [];
+  };
+
+  const formatItemPsets = (raw: FRAGS.ItemData[]) => {
+    const result: PsetDict = {};
+    for (const pset of raw) {
+        const { Name: psetName, HasProperties } = pset as any;
+        if (!(psetName && "value" in psetName && Array.isArray(HasProperties))) continue;
+        const props: Record<string, any> = {};
+        for (const prop of HasProperties) {
+        const { Name, NominalValue } = prop || {};
+        if (!(Name && "value" in Name && NominalValue && "value" in NominalValue)) continue;
+        props[Name.value] = NominalValue.value;
+        }
+        result[psetName.value] = props;
+    }
+    return result;
+  };
+
+  const onToggleVisibility = async () => {
+    const highlighter = componentsRef.current?.get(OBCF.Highlighter);
+    const hider = componentsRef.current?.get(OBC.Hider);
+    if (!highlighter || !hider) return;
+
+    const selection = highlighter.selection.select;
+    if (!selection || Object.keys(selection).length === 0) return;
+
+    for (const modelId in selection) {
+      const localIds = Array.from(selection[modelId]);
+      if (localIds.length === 0) continue;
+
+      const fragments = componentsRef.current?.get(OBC.FragmentsManager);
+      const model = fragments?.list.get(modelId);
+      if (!model) continue;
+
+      const visibility = await model.getVisible(localIds);
+      const isAllVisible = visibility.every((v) => v);
+
+      const modelIdMap: OBC.ModelIdMap = { [modelId]: new Set(localIds) };
+      await hider.set(!isAllVisible, modelIdMap);
+    }
+  };
+  
+  const onIsolate = () => {
+    const highlighter = componentsRef.current?.get(OBCF.Highlighter);
+    const hider = componentsRef.current?.get(OBC.Hider);
+    if (!highlighter || !hider) return;
+    const selection = highlighter.selection.select;
+    hider.isolate(selection);
+  };
+  
+  const onShow = async () => {
+    const hider = componentsRef.current?.get(OBC.Hider);
+    if (!hider) return;
+    await hider.set(true);
+    setInfoOpen(false);
+    setSelectedModelId(null);
+    setSelectedLocalId(null);
+    setSelectedAttrs(null);
+    setSelectedPsets(null);
+  };
+
+  return (
+    <div className="flex w-full h-screen">
+       {/* Sidebar */}
+      <aside className={`transition-width duration-300 ${darkMode ? "bg-gray-900 text-white" : "bg-indigo-400 text-white"}`}>
+        <ModelManager
+          darkMode={darkMode}
+          sidebarCollapsed={sidebarCollapsed}
+          setSidebarCollapsed={setSidebarCollapsed}
+          uploadedModels={uploadedModels}
+          IfcUpload={IfcUpload}
+          handleFragmentUpload={handleFragmentUpload}
+          handleJSONUpload={handleJSONUpload}
+          handleDownloadIFC={handleDownloadIFC}
+          downloadFragments={downloadFragments}
+          handleDownloadJSON={handleDownloadJSON}
+        />
+      </aside>
+
+      {/* Main UI */}
+      <IFCViewerUI
+        darkMode={darkMode}
+        viewerRef={viewerRef}
+        uploadedModels={uploadedModels}
+      />
+
+      <CameraControls
+        darkMode={darkMode}
+        projection={projection}
+        navigation={navigation}
+        setProjection={setProjection}
+        setNavigation={setNavigation}
+        worldRef={worldRef}
+      />
+
+      <ActionButtons
+        darkMode={darkMode}
+        onToggleVisibility={onToggleVisibility}
+        onIsolate={onIsolate}
+        onShow={onShow}
+      />
+
+      {/* Info Panel */}
+      {infoOpen && (
+        <IFCInfoPanel
+          darkMode={darkMode}
+          infoLoading={infoLoading}
+          modelId={selectedModelId}
+          localId={selectedLocalId}
+          attrs={selectedAttrs}
+          psets={selectedPsets}
+          onClose={() => setInfoOpen(false)}
+        />
+      )}
+
+      <LoadingModal darkMode={darkMode} progress={progress} show={showProgressModal} />
+
+    </div>
+  );
+}

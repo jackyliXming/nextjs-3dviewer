@@ -5,6 +5,7 @@ import IFCViewer from "@/components/IFCViewer";
 import HeaderToggle from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import { Navbar } from "@/components/navbar";
+import IFCViewerContainer from "@/containers/IFCViewerContainer";
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
@@ -23,7 +24,7 @@ export default function Home() {
       {/* <HeaderToggle darkMode={darkMode} /> */}
 
       <main className="flex flex-col gap-4 flex-1">
-        <IFCViewer darkMode={darkMode} />
+        <IFCViewerContainer darkMode={darkMode} />
       </main>
 
       <footer className="flex flex-col md:flex-row gap-4 mt-8 flex-wrap">
