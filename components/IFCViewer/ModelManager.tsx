@@ -40,7 +40,7 @@ export default function ModelManager({
     <aside
       className={`transition-width duration-300 flex flex-col
         ${darkMode ? "bg-gray-900 text-white" : "bg-indigo-400 text-white"}`}
-      style={{ width: sidebarCollapsed ? "64px" : "360px", minWidth: sidebarCollapsed ? "64px" : "360px" }}
+      style={{ width: sidebarCollapsed ? "64px" : "320px", minWidth: sidebarCollapsed ? "64px" : "320px" }}
     >
       {!sidebarCollapsed && <HeaderToggle darkMode={darkMode} />}
 

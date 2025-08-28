@@ -1,13 +1,15 @@
 "use client";
 
 import React from "react";
-import { Eye, Focus, RefreshCcw } from "lucide-react";
+import { Eye, Focus, RefreshCcw, Ghost } from "lucide-react";
 
 interface ActionButtonsProps {
   darkMode: boolean;
   onToggleVisibility: () => void;
   onIsolate: () => void;
   onShow: () => void;
+  onGhost: () => void;
+  isGhost: boolean;
 }
 
 export default function ActionButtons({
@@ -15,6 +17,8 @@ export default function ActionButtons({
   onToggleVisibility,
   onIsolate,
   onShow,
+  onGhost,
+  isGhost,
 }: ActionButtonsProps) {
   return (
     <div
@@ -46,6 +50,21 @@ export default function ActionButtons({
       >
         <RefreshCcw size={18} />
         Show All
+      </button>
+
+      <button
+        onClick={onGhost}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition
+          ${isGhost
+            ? darkMode
+              ? "bg-purple-900"
+              : "bg-purple-700"
+            : darkMode
+              ? "bg-purple-800 hover:bg-purple-900"
+              : "bg-purple-600 hover:bg-purple-700"} text-white`}
+      >
+        <Ghost size={18} />
+        {isGhost ? "Disable Ghost" : "Ghost Mode"}
       </button>
     </div>
   );

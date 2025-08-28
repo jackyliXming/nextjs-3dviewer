@@ -4,13 +4,14 @@ import React, { useEffect, useRef, useState } from "react";
 import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import * as FRAGS from "@thatopen/fragments";
-import { PerspectiveCamera, OrthographicCamera, Vector2, Color } from "three";
+import { PerspectiveCamera, OrthographicCamera, Vector2, Object3D, Mesh, Color } from "three";
 import IFCViewerUI from "@/components/IFCViewer/ViewerUI";
 import IFCInfoPanel from "@/components/IFCViewer/InfoPanel";
 import ModelManager from "@/components/IFCViewer/ModelManager";
 import LoadingModal from "@/components/IFCViewer/LoadingModal";
 import ActionButtons from "@/components/IFCViewer/ActionButtons";
 import CameraControls from "@/components/IFCViewer/CameraControls";
+import ToolBar from "@/components/IFCViewer/ToolBar";
 
 interface UploadedModel {
   id: string;
@@ -43,7 +44,11 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [selectedPsets, setSelectedPsets] = useState<PsetDict | null>(null);
   const [projection, setProjection] = React.useState<"Perspective" | "Orthographic">("Perspective");
   const [navigation, setNavigation] = React.useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [fragments, setFragments] = useState<FRAGS.FragmentsModel[]>([]);
+  const [isGhost, setIsGhost] = useState(false);
+  const measurerRef = useRef<OBCF.LengthMeasurement | null>(null);
+  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | null>(null);
+
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -177,6 +182,28 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
     init();
   }, []);
+
+  useEffect(() => {
+  if (!componentsRef.current || !worldRef.current) return;
+
+  const measurer = componentsRef.current.get(OBCF.LengthMeasurement);
+  if (!measurer) return;
+
+  measurer.world = worldRef.current;
+  measurer.color = new Color("#494cb6");
+  measurer.enabled = false;
+
+  measurerRef.current = measurer;
+
+  const handleDblClick = () => {
+    if (measurerRef.current?.enabled) {
+      measurerRef.current.create();
+    }
+  };
+
+  viewerRef.current?.addEventListener("dblclick", handleDblClick);
+  return () => viewerRef.current?.removeEventListener("dblclick", handleDblClick);
+}, [componentsRef.current, worldRef.current]);
 
   const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -388,6 +415,95 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     setSelectedPsets(null);
   };
 
+  const originalColors  = useRef(new Map<
+    FRAGS.BIMMaterial, 
+    { color: number; transparent: boolean; opacity: number }
+  >());
+
+  const setModelTransparent = (components: OBC.Components) => {
+    const fragments = components.get(OBC.FragmentsManager);
+
+    const materials = [...fragments.core.models.materials.list.values()];
+    for (const material of materials) {
+      if (material.userData.customId) continue;
+
+      if (!originalColors.current.has(material)) {
+        let color: number;
+        if ('color' in material) {
+          color = material.color.getHex();
+        } else {
+          color = material.lodColor.getHex();
+        }
+
+        originalColors.current.set(material, {
+          color,
+          transparent: material.transparent,
+          opacity: material.opacity,
+        });
+      }
+
+      material.transparent = true;
+      material.opacity = 0.2;
+      material.needsUpdate = true;
+
+      if ('color' in material) material.color.setRGB(1, 1, 1);
+      else material.lodColor.setRGB(1, 1, 1);
+    }
+  };
+
+  const restoreModelMaterials = () => {
+    for (const [material, data] of originalColors.current) {
+      material.transparent = data.transparent;
+      material.opacity = data.opacity;
+      if ('color' in material) material.color.setHex(data.color);
+      else material.lodColor.setHex(data.color);
+      material.needsUpdate = true;
+    }
+    originalColors.current.clear();
+  };
+
+  const handleGhost = () => {
+    if (!componentsRef.current) return;
+
+    if (isGhost) {
+      restoreModelMaterials();
+      setIsGhost(false);
+    } else {
+      setModelTransparent(componentsRef.current);
+      setIsGhost(true);
+    }
+  };
+
+  const handleClipper = () => {
+    console.log("Clipper activated");
+  };
+
+  const handleLength = () => {
+  if (!measurerRef.current) return;
+
+  const isActive = activeTool === "length";
+  setActiveTool(isActive ? null : "length");
+
+  measurerRef.current.enabled = !isActive;
+
+  if (isActive) {
+    measurerRef.current.list.clear();
+  }
+};
+
+// const getAllMeasuredLengths = () => {
+//   if (!measurerRef.current) return [];
+//   const lengths: number[] = [];
+//   for (const dim of measurerRef.current.list) {
+//     lengths.push(dim.value);
+//   }
+//   return lengths;
+// };
+
+  const handleArea = () => {
+    console.log("Area measurement activated");
+  };
+
   return (
     <div className="flex w-full h-screen">
        {/* Sidebar */}
@@ -413,6 +529,16 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         uploadedModels={uploadedModels}
       />
 
+      <ToolBar
+        darkMode={darkMode}
+        activeTool={activeTool}
+        onSelectTool={(tool) => {
+          if (tool === "length") handleLength();
+          else if (tool === "clipper") handleClipper();
+          else if (tool === "area") handleArea();
+        }}
+      />
+
       <CameraControls
         darkMode={darkMode}
         projection={projection}
@@ -427,6 +553,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         onToggleVisibility={onToggleVisibility}
         onIsolate={onIsolate}
         onShow={onShow}
+        onGhost={handleGhost}
+        isGhost={isGhost}
       />
 
       {/* Info Panel */}
