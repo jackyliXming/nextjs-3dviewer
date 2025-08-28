@@ -48,6 +48,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [isGhost, setIsGhost] = useState(false);
   const measurerRef = useRef<OBCF.LengthMeasurement | null>(null);
   const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | null>(null);
+  const areaMeasurerRef = useRef<OBCF.AreaMeasurement | null>(null);
 
 
   useEffect(() => {
@@ -184,26 +185,64 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   }, []);
 
   useEffect(() => {
-  if (!componentsRef.current || !worldRef.current) return;
+    if (!componentsRef.current || !worldRef.current) return;
 
-  const measurer = componentsRef.current.get(OBCF.LengthMeasurement);
-  if (!measurer) return;
+    const length = componentsRef.current.get(OBCF.LengthMeasurement);
+    length.world = worldRef.current;
+    length.color = new Color("#494cb6");
+    length.enabled = false;
+    measurerRef.current = length;
 
-  measurer.world = worldRef.current;
-  measurer.color = new Color("#494cb6");
-  measurer.enabled = false;
+    const area = componentsRef.current.get(OBCF.AreaMeasurement);
+    area.world = worldRef.current;
+    area.color = new Color("#494cb6");
+    area.enabled = false;
+    areaMeasurerRef.current = area;
 
-  measurerRef.current = measurer;
+    const handleDblClick = () => {
+      if (activeTool === "length" && measurerRef.current?.enabled) {
+        measurerRef.current.create();
+      } else if (activeTool === "area" && areaMeasurerRef.current?.enabled) {
+        areaMeasurerRef.current.create();
+      }
+    };
 
-  const handleDblClick = () => {
-    if (measurerRef.current?.enabled) {
-      measurerRef.current.create();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeTool === "area" && areaMeasurerRef.current?.enabled) {
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+          areaMeasurerRef.current.endCreation();
+        } else if (e.code === "Delete" || e.code === "Backspace") {
+          areaMeasurerRef.current.delete();
+        }
+      }
+      if (activeTool === "length" && measurerRef.current?.enabled) {
+        if (e.code === "Delete" || e.code === "Backspace") {
+          measurerRef.current.delete();
+        }
+      }
+    };
+
+    viewerRef.current?.addEventListener("dblclick", handleDblClick);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      viewerRef.current?.removeEventListener("dblclick", handleDblClick);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [componentsRef.current, worldRef.current, activeTool]);
+
+  useEffect(() => {
+    if (!measurerRef.current || !areaMeasurerRef.current) return;
+
+    measurerRef.current.enabled = false;
+    areaMeasurerRef.current.enabled = false;
+
+    if (activeTool === "length") {
+      measurerRef.current.enabled = true;
+    } else if (activeTool === "area") {
+      areaMeasurerRef.current.enabled = true;
     }
-  };
-
-  viewerRef.current?.addEventListener("dblclick", handleDblClick);
-  return () => viewerRef.current?.removeEventListener("dblclick", handleDblClick);
-}, [componentsRef.current, worldRef.current]);
+  }, [activeTool]);
 
   const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -443,11 +482,11 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       }
 
       material.transparent = true;
-      material.opacity = 0.2;
+      material.opacity = 0.6;
       material.needsUpdate = true;
 
-      if ('color' in material) material.color.setRGB(1, 1, 1);
-      else material.lodColor.setRGB(1, 1, 1);
+      if ('color' in material) material.color.setRGB(0.2, 0.2, 0.2);
+      else material.lodColor.setRGB(0.5, 0.5, 0.5);
     }
   };
 
@@ -475,33 +514,40 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   };
 
   const handleClipper = () => {
-    console.log("Clipper activated");
+    const isActive = activeTool === "clipper";
+    setActiveTool(isActive ? null : "clipper");
   };
 
   const handleLength = () => {
-  if (!measurerRef.current) return;
+    if (!measurerRef.current) return;
 
-  const isActive = activeTool === "length";
-  setActiveTool(isActive ? null : "length");
+    const isActive = activeTool === "length";
+    setActiveTool(isActive ? null : "length");
 
-  measurerRef.current.enabled = !isActive;
+    measurerRef.current.enabled = !isActive;
 
-  if (isActive) {
-    measurerRef.current.list.clear();
-  }
-};
-
-// const getAllMeasuredLengths = () => {
-//   if (!measurerRef.current) return [];
-//   const lengths: number[] = [];
-//   for (const dim of measurerRef.current.list) {
-//     lengths.push(dim.value);
-//   }
-//   return lengths;
-// };
+    if (areaMeasurerRef.current){
+      areaMeasurerRef.current.list.clear();
+    }    
+    if (isActive) {
+      measurerRef.current.list.clear();
+    }
+  };
 
   const handleArea = () => {
-    console.log("Area measurement activated");
+    if (!areaMeasurerRef.current) return;
+
+    const isActive = activeTool === "area";
+    setActiveTool(isActive ? null : "area");
+
+    areaMeasurerRef.current.enabled = !isActive;
+
+    if (measurerRef.current){
+      measurerRef.current.list.clear();
+    }
+    if (isActive) {
+      areaMeasurerRef.current.list.clear();
+    }
   };
 
   return (
