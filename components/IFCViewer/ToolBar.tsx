@@ -112,7 +112,7 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
         <span className={tooltipStyle("area", "Area")}>Area Measurement</span>
       </div>
       <div
-        className={`opacity-70 mt-6 w-45 text-sm rounded-lg p-1 shadow-md ${
+        className={`opacity-60 mt-6 w-45 text-sm rounded-lg p-1 shadow-md ${
           darkMode ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-800"
         }`}
       >

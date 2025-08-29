@@ -44,12 +44,12 @@ export default function IFCInfoPanel({ darkMode, infoLoading, modelId, localId, 
 
   return (
     <div
-      className={`absolute flex flex-col right-0 h-full w-[360px] border-l shadow-xl p-4 overflow-auto
+      className={`absolute flex flex-col right-70 h-full w-[350px] border-l shadow-xl p-4 overflow-auto opacity-80
         ${darkMode ? "bg-gray-900 text-amber-100 border-gray-700" : "bg-white text-gray-900 border-gray-200"}`}
     >
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-2xl font-semibold">Element Info</h3>
-        <button onClick={onClose} className="p-1 rounded" aria-label="Close info panel">
+        <button onClick={onClose} className="p-1 rounded hover:bg-gray-300" aria-label="Close info panel">
           <X size={18} />
         </button>
       </div>

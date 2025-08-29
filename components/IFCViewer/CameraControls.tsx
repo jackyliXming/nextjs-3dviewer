@@ -51,7 +51,7 @@ export default function CameraControls({
   return (
     <>
       <div
-        className={`absolute top-15 left-1/2 transform -translate-x-1/2 flex gap-6 px-6 py-3 rounded-xl shadow-lg
+        className={`absolute top-15 left-8/17 transform -translate-x-1/2 flex gap-6 px-6 py-3 rounded-xl shadow-lg
           ${darkMode ? "bg-gray-800 text-amber-100" : "bg-white text-gray-900"}`}
       >
         {/* Projection */}

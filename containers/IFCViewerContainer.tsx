@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import * as FRAGS from "@thatopen/fragments";
-import { PerspectiveCamera, OrthographicCamera, Vector2, Object3D, Mesh, Color } from "three";
+import { PerspectiveCamera, OrthographicCamera, Vector2, Object3D, Mesh, Color, Vector3 } from "three";
 import IFCViewerUI from "@/components/IFCViewer/ViewerUI";
 import IFCInfoPanel from "@/components/IFCViewer/InfoPanel";
 import ModelManager from "@/components/IFCViewer/ModelManager";
@@ -12,12 +12,20 @@ import LoadingModal from "@/components/IFCViewer/LoadingModal";
 import ActionButtons from "@/components/IFCViewer/ActionButtons";
 import CameraControls from "@/components/IFCViewer/CameraControls";
 import ToolBar from "@/components/IFCViewer/ToolBar";
+import Viewpoints from "@/components/IFCViewer/Viewpoints";
 
 interface UploadedModel {
   id: string;
   name: string;
   type: "ifc" | "frag" | "json";
   data?: ArrayBuffer;
+}
+
+interface StoredViewpoint {
+  id: string;
+  title: string;
+  viewpoint: OBC.Viewpoint;
+  snapshot: string | null;
 }
 
 type ItemProps = Record<string, any>;
@@ -33,6 +41,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const clipperRef = useRef<OBC.Clipper | null>(null);
   const measurerRef = useRef<OBCF.LengthMeasurement | null>(null);
   const areaMeasurerRef = useRef<OBCF.AreaMeasurement | null>(null);
+  const viewpointsRef = useRef<OBC.Viewpoints | null>(null);
 
   const [progress, setProgress] = useState<number>(0);
   const [showProgressModal, setShowProgressModal] = useState(false);
@@ -50,6 +59,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | null>(null);  
   const [lengthMode, setLengthMode] = useState<"free" | "edge">("free");
   const [areaMode, setAreaMode] = useState<"free" | "square">("free");
+  const [currentViewpoint, setCurrentViewpoint] = useState<OBC.Viewpoint | null>(null);
+  const [storedViews, setStoredViews] = useState<StoredViewpoint[]>([]);
 
 
   useEffect(() => {
@@ -111,6 +122,30 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
       const casters = components.get(OBC.Raycasters);
       casters.get(world);
+
+      const viewpoints = components.get(OBC.Viewpoints);
+      viewpoints.world = world;
+      viewpointsRef.current = viewpoints;
+
+      viewpoints.list.onItemSet.add(({ value: viewpoint }) => {
+        viewpoint.selectionComponents.add(
+          "3V$FMCDUfCoPwUaHMPfteW",
+          "1fIVuvFffDJRV_SJESOtCZ",
+        );
+      });
+
+      viewpoints.list.onItemSet.add(async ({ value: viewpoint }) => {
+        const finder = components.get(OBC.ItemsFinder);
+        const doors = await finder.getItems([{ categories: [/DOOR/] }]);
+        const guids = await fragments.modelIdMapToGuids(doors);
+        viewpoint.selectionComponents.add(...guids);
+      });
+
+      viewpoints.list.onItemSet.add(({ value: viewpoint }) => {
+        const bcfTopics = components.get(OBC.BCFTopics);
+        const topic = bcfTopics.create();
+        topic.viewpoints.add(viewpoint.guid);
+      });
 
       const clipper = components.get(OBC.Clipper);
       clipper.enabled = false;
@@ -628,6 +663,61 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     setUploadedModels([]);
   };
 
+  const createViewpoint = async (): Promise<OBC.Viewpoint | null> => {
+    if (!viewpointsRef.current) return null;
+
+    const vp = viewpointsRef.current.create();
+    if (!vp) return null;
+
+    vp.title = `Viewpoint ${storedViews.length + 1}`;
+    await vp.updateCamera();
+
+    const snapshotData = getViewpointSnapshotData(vp) || "";
+
+    setStoredViews((prev) => [
+      ...prev,
+      {
+        id: vp.guid,
+        title: vp.title || `Viewpoint ${prev.length + 1}`,
+        viewpoint: vp,
+        snapshot: snapshotData,
+      },
+    ]);
+
+    setCurrentViewpoint(vp);
+    return vp;
+  };
+
+  const updateViewpointCamera = async () => {
+    if (!currentViewpoint) return;
+    await currentViewpoint.updateCamera();
+  };
+
+const setWorldCamera = async () => {
+  if (!currentViewpoint || !worldRef.current) return;
+  await currentViewpoint.go();
+};
+
+  const getViewpointSnapshotData = (vp: OBC.Viewpoint): string | null => {
+    if (!vp || !viewpointsRef.current) return null;
+
+    const data = viewpointsRef.current.snapshots.get(vp.guid);
+    if (!data) return null;
+
+    if (data instanceof Uint8Array) {
+      let binary = "";
+      const chunkSize = 0x8000;
+      for (let i = 0; i < data.length; i += chunkSize) {
+        const chunk = data.subarray(i, i + chunkSize);
+        binary += String.fromCharCode(...chunk);
+      }
+      return btoa(binary);
+    }
+
+    return String(data);
+  };
+
+
   return (
     <div className="flex w-full h-screen">
        {/* Sidebar */}
@@ -676,6 +766,16 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         setProjection={setProjection}
         setNavigation={setNavigation}
         worldRef={worldRef}
+      />
+
+      <Viewpoints
+        darkMode={darkMode}
+        createViewpoint={createViewpoint}
+        updateViewpointCamera={updateViewpointCamera}
+        setWorldCamera={setWorldCamera}
+        getViewpointSnapshotData={getViewpointSnapshotData}
+        storedViews={storedViews}
+        setStoredViews={setStoredViews}
       />
 
       <ActionButtons
