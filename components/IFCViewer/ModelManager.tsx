@@ -22,6 +22,8 @@ interface ModelManagerProps {
   handleDownloadIFC: (model: UploadedModel) => void;
   downloadFragments: () => void;
   handleDownloadJSON: (model: UploadedModel) => void;
+  deleteAllModels: () => void;
+  deleteSelectedModel: (model: UploadedModel) => void;
 }
 
 export default function ModelManager({
@@ -35,6 +37,8 @@ export default function ModelManager({
   handleDownloadIFC,
   downloadFragments,
   handleDownloadJSON,
+  deleteAllModels,
+  deleteSelectedModel,
 }: ModelManagerProps) {
   return (
     <aside
@@ -74,6 +78,13 @@ export default function ModelManager({
             Upload JSON File
             <input type="file" accept=".json" onChange={handleJSONUpload} className="hidden" />
           </label>
+          <button
+            className={`w-5/6 px-6 py-2 rounded-lg font-medium
+              ${darkMode ? "bg-red-700 text-amber-100 hover:bg-red-800" : "bg-red-600 text-white hover:bg-red-700"}`}
+            onClick={deleteAllModels}
+          >
+            Delete All Models
+          </button>
         </div>
       )}
 
@@ -110,6 +121,12 @@ export default function ModelManager({
                     onClick={() => handleDownloadJSON(model)}
                   >
                     JSON
+                  </button>
+                  <button
+                    className={`${darkMode ? "bg-red-700 text-amber-100 hover:bg-red-800" : "bg-red-600 text-white hover:bg-red-700"} px-2 py-1 rounded text-xs`}
+                    onClick={() => deleteSelectedModel(model)}
+                  >
+                    Delete
                   </button>
                 </div>
                 <hr

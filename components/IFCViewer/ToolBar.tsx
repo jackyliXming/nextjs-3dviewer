@@ -3,13 +3,17 @@
 import React from "react";
 import { Scissors, Ruler, Square } from "lucide-react";
 
-interface ToolbarProps {
+interface ToolBarProps {
   darkMode: boolean;
   activeTool: "clipper" | "length" | "area" | null;
-  onSelectTool: (tool: "clipper" | "length" | "area") => void;
+  onSelectTool: (tool: "clipper" | "length" | "area" | null) => void;
+  lengthMode: "free" | "edge";
+  setLengthMode: (mode: "free" | "edge") => void;
+  areaMode: "free" | "square";
+  setAreaMode: (mode: "free" | "square") => void;
 }
 
-export default function ToolBar({ darkMode, activeTool, onSelectTool }: ToolbarProps) {
+export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode, setLengthMode, areaMode, setAreaMode }: ToolBarProps) {
   const handleClick = (tool: "clipper" | "length" | "area") => {
     onSelectTool(tool);
   };
@@ -33,9 +37,37 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool }: ToolbarP
    const getDescription = () => {
     switch (activeTool) {
       case "clipper":
-        return "Clipper: ";
+        return (
+          <div className="text-left">
+            <div className="mb-1 font-bold text-center">
+              <span><b>Clipper</b></span>
+            </div>            
+            <hr/>
+            <span><b>*Double Left Click:</b> Create Clipping plane.</span>
+            <br/>
+            <span><b>*Drag the arrow:</b> Clip the model.</span>
+            <br/>
+            <span><b>*Click Clipper Button:</b> Quit Clipper Mode and delete all</span>
+            <br/>
+            <span><b>*Select the plane and press delete key twice:</b> Delete plane</span>
+            <br/>
+            <span><b>*Click the delete button below:</b> Delete All</span>
+          </div>        
+      );
       case "length":
-        return "Length Measurement: ";
+        return (
+          <div className="text-left">
+            <div className="mb-1 font-bold text-center">
+              <span><b>Length Measurement</b></span>
+            </div>            
+            <hr/>
+            <span><b>*Double Left Click:</b> Create Dimension.</span>
+            <br/>
+            <span><b>*Click Length Measurement Button:</b> Quit Length Measurement Mode and delete all</span>
+            <br/>
+            <span><b>*Click the delete button below:</b> Delete All</span>
+          </div>        
+      );
       case "area":
         return (
           <div className="text-left">
@@ -80,10 +112,38 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool }: ToolbarP
         <span className={tooltipStyle("area", "Area")}>Area Measurement</span>
       </div>
       <div
-        className={`opacity-70 mt-6 w-45 text-sm rounded-lg p-2 shadow-md ${
+        className={`opacity-70 mt-6 w-45 text-sm rounded-lg p-1 shadow-md ${
           darkMode ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-800"
         }`}
       >
+        {activeTool === "length" && (
+          <div className="mb-2">
+            <label className="mr-2 font-medium">Length Mode:</label>
+            <select
+              value={lengthMode}
+              onChange={(e) => setLengthMode(e.target.value as "free" | "edge")}
+              className="text-black rounded px-1 py-1 bg-gray-400"
+            >
+              <option value="free">Free</option>
+              <option value="edge">Edge</option>
+            </select>
+          </div>
+        )}
+
+        {activeTool === "area" && (
+          <div className="mb-2">
+            <label className="mr-2 font-medium">Area Mode:</label>
+            <select
+              value={areaMode}
+              onChange={(e) => setAreaMode(e.target.value as "free" | "square")}
+              className="text-black rounded px-1 py-1 bg-gray-400"
+            >
+              <option value="free">Free</option>
+              <option value="square">Square</option>
+            </select>
+          </div>
+        )}
+
         {getDescription()}
       </div>
     </div>

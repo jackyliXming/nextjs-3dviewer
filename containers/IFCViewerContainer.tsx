@@ -30,25 +30,26 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const ifcLoaderRef = useRef<OBC.IfcLoader | null>(null);
   const worldRef = useRef<any>(null);
   const cameraRef = useRef<OBC.OrthoPerspectiveCamera | null>(null);
+  const clipperRef = useRef<OBC.Clipper | null>(null);
+  const measurerRef = useRef<OBCF.LengthMeasurement | null>(null);
+  const areaMeasurerRef = useRef<OBCF.AreaMeasurement | null>(null);
 
   const [progress, setProgress] = useState<number>(0);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [uploadedModels, setUploadedModels] = useState<UploadedModel[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoLoading, setInfoLoading] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [selectedLocalId, setSelectedLocalId] = useState<number | null>(null);
   const [selectedAttrs, setSelectedAttrs] = useState<ItemProps | null>(null);
   const [selectedPsets, setSelectedPsets] = useState<PsetDict | null>(null);
-  const [projection, setProjection] = React.useState<"Perspective" | "Orthographic">("Perspective");
-  const [navigation, setNavigation] = React.useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
-  const [fragments, setFragments] = useState<FRAGS.FragmentsModel[]>([]);
-  const [isGhost, setIsGhost] = useState(false);
-  const measurerRef = useRef<OBCF.LengthMeasurement | null>(null);
-  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | null>(null);
-  const areaMeasurerRef = useRef<OBCF.AreaMeasurement | null>(null);
+  const [projection, setProjection] = useState<"Perspective" | "Orthographic">("Perspective");
+  const [navigation, setNavigation] = useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
+  const [isGhost, setIsGhost] = useState(false);  
+  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | null>(null);  
+  const [lengthMode, setLengthMode] = useState<"free" | "edge">("free");
+  const [areaMode, setAreaMode] = useState<"free" | "square">("free");
 
 
   useEffect(() => {
@@ -107,6 +108,13 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         world.scene.three.add(model.object);
         fragments.core.update(true);
       });
+
+      const casters = components.get(OBC.Raycasters);
+      casters.get(world);
+
+      const clipper = components.get(OBC.Clipper);
+      clipper.enabled = false;
+      clipperRef.current = clipper;
 
       const highlighter = components.get(OBCF.Highlighter);
       highlighter.setup({ world });
@@ -193,6 +201,13 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     length.enabled = false;
     measurerRef.current = length;
 
+    if (measurerRef.current) {
+      measurerRef.current.world = worldRef.current;
+      measurerRef.current.color = new Color("#494cb6");
+      measurerRef.current.enabled = false;
+      measurerRef.current.mode = lengthMode;
+    }
+
     const area = componentsRef.current.get(OBCF.AreaMeasurement);
     area.world = worldRef.current;
     area.color = new Color("#494cb6");
@@ -204,6 +219,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         measurerRef.current.create();
       } else if (activeTool === "area" && areaMeasurerRef.current?.enabled) {
         areaMeasurerRef.current.create();
+      } else if (activeTool === "clipper" && clipperRef.current?.enabled) {
+        clipperRef.current.create(worldRef.current);
       }
     };
 
@@ -220,6 +237,11 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           measurerRef.current.delete();
         }
       }
+      if (activeTool === "clipper" && clipperRef.current?.enabled) {
+        if (e.code === "Delete" || e.code === "Backspace") {
+          clipperRef.current.delete(worldRef.current);
+        }
+      }
     };
 
     viewerRef.current?.addEventListener("dblclick", handleDblClick);
@@ -232,8 +254,9 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   }, [componentsRef.current, worldRef.current, activeTool]);
 
   useEffect(() => {
-    if (!measurerRef.current || !areaMeasurerRef.current) return;
+    if (!measurerRef.current || !areaMeasurerRef.current || !clipperRef.current) return;
 
+    clipperRef.current.enabled = false;
     measurerRef.current.enabled = false;
     areaMeasurerRef.current.enabled = false;
 
@@ -241,8 +264,22 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       measurerRef.current.enabled = true;
     } else if (activeTool === "area") {
       areaMeasurerRef.current.enabled = true;
+    } else if (activeTool === "clipper") {
+      clipperRef.current.enabled = true;
     }
   }, [activeTool]);
+
+  useEffect(() => {
+    if (measurerRef.current) {
+      measurerRef.current.mode = lengthMode;
+    }
+  }, [lengthMode]);
+
+  useEffect(() => {
+    if (areaMeasurerRef.current) {
+      areaMeasurerRef.current.mode = areaMode;
+    }
+  }, [areaMode]);
 
   const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -281,6 +318,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       console.error("Failed to load IFC:", err);
     } finally {
       setShowProgressModal(false);
+      event.target.value = "";
     }
   };
   
@@ -315,6 +353,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       setUploadedModels((prev) => [...prev, { id: modelId, name: file.name, type: "frag", data: arrayBuffer }]);
     } finally {
       setShowProgressModal(false);
+      event.target.value = "";
     }
   };
   
@@ -346,6 +385,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       setUploadedModels((prev) => [...prev, { id: modelId, name: file.name, type: "json" }]);
     } finally {
       setShowProgressModal(false);
+      event.target.value = "";
     }
   };
   
@@ -514,8 +554,16 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   };
 
   const handleClipper = () => {
+    if (!clipperRef.current) return;
+
     const isActive = activeTool === "clipper";
     setActiveTool(isActive ? null : "clipper");
+
+    clipperRef.current.enabled = !isActive;
+
+    if (measurerRef.current) measurerRef.current.list.clear();
+    if (areaMeasurerRef.current) areaMeasurerRef.current.list.clear();
+    if (isActive) clipperRef.current.list.clear();
   };
 
   const handleLength = () => {
@@ -526,12 +574,12 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
     measurerRef.current.enabled = !isActive;
 
-    if (areaMeasurerRef.current){
-      areaMeasurerRef.current.list.clear();
-    }    
-    if (isActive) {
+    if (clipperRef.current) 
+      clipperRef.current.list.clear();
+    if (areaMeasurerRef.current) 
+      areaMeasurerRef.current.list.clear();  
+    if (isActive) 
       measurerRef.current.list.clear();
-    }
   };
 
   const handleArea = () => {
@@ -550,6 +598,36 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     }
   };
 
+  const deleteSelectedModel = (model: UploadedModel) => {
+    if (!fragmentsRef.current) return;
+
+    fragmentsRef.current.core.disposeModel(model.id);
+
+    if (selectedModelId === model.id) {
+      setSelectedModelId(null);
+      setSelectedLocalId(null);
+      setSelectedAttrs(null);
+      setSelectedPsets(null);
+    }
+
+    setUploadedModels((prev) => prev.filter((m) => m.id !== model.id));
+  };
+
+  const deleteAllModels = () => {
+    if (!fragmentsRef.current) return;
+    
+    for (const [modelId] of fragmentsRef.current.list) {
+      fragmentsRef.current.core.disposeModel(modelId);
+    }
+
+    setSelectedModelId(null);
+    setSelectedLocalId(null);
+    setSelectedAttrs(null);
+    setSelectedPsets(null);
+
+    setUploadedModels([]);
+  };
+
   return (
     <div className="flex w-full h-screen">
        {/* Sidebar */}
@@ -565,6 +643,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           handleDownloadIFC={handleDownloadIFC}
           downloadFragments={downloadFragments}
           handleDownloadJSON={handleDownloadJSON}
+          deleteAllModels={deleteAllModels}
+          deleteSelectedModel={deleteSelectedModel}
         />
       </aside>
 
@@ -583,6 +663,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           else if (tool === "clipper") handleClipper();
           else if (tool === "area") handleArea();
         }}
+        lengthMode={lengthMode}
+        setLengthMode={setLengthMode}
+        areaMode={areaMode}
+        setAreaMode={setAreaMode}
       />
 
       <CameraControls
