@@ -62,8 +62,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [areaMode, setAreaMode] = useState<"free" | "square">("free");
   const [currentViewpoint, setCurrentViewpoint] = useState<OBC.Viewpoint | null>(null);
   const [storedViews, setStoredViews] = useState<StoredViewpoint[]>([]);
-  const [worldState, setWorldState] = useState<OBC.World | null>(null);
-
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -75,7 +75,6 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       const worlds = components.get(OBC.Worlds);
       const world = worlds.create();
       worldRef.current = world;
-      setWorldState(world);
 
       const scene = new OBC.SimpleScene(components);
       world.scene = scene;
@@ -343,15 +342,19 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         userData: {},
       });
 
-      clearInterval(progressInterval);
-      setProgress(100);
-      await new Promise((r) => setTimeout(r, 300));
+      fragmentsRef.current.list.set(modelId, fragModel);   
 
       worldRef.current.scene.three.add(fragModel.object);
       fragmentsRef.current.core.update(true);
       fragModel.useCamera(worldRef.current.camera.three);
 
       setUploadedModels((prev) => [...prev, { id: modelId, name: file.name, type: "ifc", data: arrayBuffer }]);
+
+      clearInterval(progressInterval);
+      setProgress(100);
+      await new Promise((r) => setTimeout(r, 300));
+
+      await loadCategories(fragModel);
     } catch (err) {
       console.error("Failed to load IFC:", err);
     } finally {
@@ -442,11 +445,11 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     for (const [, model] of fragmentsRef.current!.list) {
       const fragsBuffer = await model.getBuffer(false);
       const file = new File([fragsBuffer], `${model.modelId}.frag`);
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(file);
-      link.download = file.name;
-      link.click();
-      URL.revokeObjectURL(link.href);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(file);
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
   };
   
@@ -463,12 +466,12 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
   const getItemPsets = async (model: any, localId: number) => {
     const [data] = await model.getItemsData([localId], {
-        attributesDefault: false,
-        attributes: ["Name", "NominalValue"],
-        relations: {
-        IsDefinedBy: { attributes: true, relations: true },
-        DefinesOcurrence: { attributes: false, relations: false },
-        },
+      attributesDefault: false,
+      attributes: ["Name", "NominalValue"],
+      relations: {
+      IsDefinedBy: { attributes: true, relations: true },
+      DefinesOcurrence: { attributes: false, relations: false },
+      },
     });
     return (data?.IsDefinedBy as FRAGS.ItemData[]) ?? [];
   };
@@ -476,15 +479,15 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const formatItemPsets = (raw: FRAGS.ItemData[]) => {
     const result: PsetDict = {};
     for (const pset of raw) {
-        const { Name: psetName, HasProperties } = pset as any;
-        if (!(psetName && "value" in psetName && Array.isArray(HasProperties))) continue;
-        const props: Record<string, any> = {};
-        for (const prop of HasProperties) {
-        const { Name, NominalValue } = prop || {};
-        if (!(Name && "value" in Name && NominalValue && "value" in NominalValue)) continue;
-        props[Name.value] = NominalValue.value;
-        }
-        result[psetName.value] = props;
+      const { Name: psetName, HasProperties } = pset as any;
+      if (!(psetName && "value" in psetName && Array.isArray(HasProperties))) continue;
+      const props: Record<string, any> = {};
+      for (const prop of HasProperties) {
+      const { Name, NominalValue } = prop || {};
+      if (!(Name && "value" in Name && NominalValue && "value" in NominalValue)) continue;
+      props[Name.value] = NominalValue.value;
+      }
+      result[psetName.value] = props;
     }
     return result;
   };
@@ -696,10 +699,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     await currentViewpoint.updateCamera();
   };
 
-const setWorldCamera = async () => {
-  if (!currentViewpoint || !worldRef.current) return;
-  await currentViewpoint.go();
-};
+  const setWorldCamera = async () => {
+    if (!currentViewpoint || !worldRef.current) return;
+    await currentViewpoint.go();
+  };
 
   const getViewpointSnapshotData = (vp: OBC.Viewpoint): string | null => {
     if (!vp || !viewpointsRef.current) return null;
@@ -720,6 +723,53 @@ const setWorldCamera = async () => {
     return String(data);
   };
 
+  const loadCategories = async (model: FRAGS.FragmentsModel) => {
+    if (!model) return;
+
+    const allCats = await model.getItemsOfCategories([/.*/]);
+    const categoryList = Object.keys(allCats).sort();
+
+    setCategories(categoryList);
+
+    if (!selectedCategory && categoryList.length > 0) {
+      setSelectedCategory(categoryList[0]);
+    }
+  };
+
+  const isolateCategory = async (category: string | null) => {
+    if (!category || !fragmentsRef.current) return;
+
+    const fragments = fragmentsRef.current;
+    const hider = componentsRef.current?.get(OBC.Hider);
+    if (!hider) return;
+
+    const selection: Record<string, Set<number>> = {};
+
+    for (const [, model] of fragments.list) {
+      try {
+        const categoryItems = await model.getItemsOfCategories([new RegExp(`^${category}$`)]);
+        const localIds = Object.values(categoryItems).flat();
+
+        if (localIds.length > 0) {
+          selection[model.modelId] = new Set(localIds);
+        }
+      } catch (err) {
+        console.warn(`Failed to get category items for model ${model.modelId}`, err);
+      }
+    }
+
+    hider.isolate(selection);
+
+    fragments.core.update(true);
+  };
+
+  const onCategorySelect = (cat: string | null) => {
+    setSelectedCategory(cat);
+
+    setTimeout(() => {
+      isolateCategory(cat).catch(console.warn);
+    }, 100);
+  };
 
   return (
     <div className="flex w-full h-screen">
@@ -781,14 +831,13 @@ const setWorldCamera = async () => {
         setStoredViews={setStoredViews}
       />
 
-{componentsRef.current && fragmentsRef.current && worldRef.current && (
-  <ViewOrientation
-    components={componentsRef.current}
-    fragments={fragmentsRef.current}
-    world={worldRef.current}
-  />
-)}
-
+      {componentsRef.current && fragmentsRef.current && worldRef.current && (
+        <ViewOrientation
+          components={componentsRef.current}
+          fragments={fragmentsRef.current}
+          world={worldRef.current}
+        />
+      )}
 
       <ActionButtons
         darkMode={darkMode}
@@ -809,6 +858,9 @@ const setWorldCamera = async () => {
           attrs={selectedAttrs}
           psets={selectedPsets}
           onClose={() => setInfoOpen(false)}
+          categories={categories}
+          selectedCategory={selectedCategory ?? undefined}
+          isolateCategory={onCategorySelect}
         />
       )}
 

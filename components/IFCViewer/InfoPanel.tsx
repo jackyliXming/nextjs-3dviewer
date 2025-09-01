@@ -9,9 +9,12 @@ interface Props {
   attrs: Record<string, any> | null;
   psets: Record<string, Record<string, any>> | null;
   onClose: () => void;
+  categories?: string[];                     
+  selectedCategory?: string;
+  isolateCategory?: (category: string) => void;
 }
 
-export default function IFCInfoPanel({ darkMode, infoLoading, modelId, localId, attrs, psets, onClose }: Props) {
+export default function IFCInfoPanel({ darkMode, infoLoading, modelId, localId, attrs, psets, onClose, categories = [], selectedCategory, isolateCategory }: Props) {
   const [searchText, setSearchText] = useState("");
 
   const filteredAttrs = attrs
@@ -53,6 +56,25 @@ export default function IFCInfoPanel({ darkMode, infoLoading, modelId, localId, 
           <X size={18} />
         </button>
       </div>
+
+      {/* Dropdown for global categories */}
+      {categories.length > 0 && isolateCategory && (
+        <div className="mb-3">
+          <label className="block mb-1 font-medium">Isolate Category:</label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => isolateCategory(e.target.value)}
+            className={`w-full p-2 rounded border ${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-gray-100 text-gray-900 border-gray-300"}`}
+          >
+            <option value="">Select category</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="text-l opacity-80 mb-3">
         {modelId ? `Model: ${modelId}` : ""}
