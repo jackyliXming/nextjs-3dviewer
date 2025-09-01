@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import * as OBC from "@thatopen/components";
 
 interface CameraControlsProps {
   darkMode: boolean;
@@ -21,60 +22,94 @@ export default function CameraControls({
 }: CameraControlsProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [show2DMenu, setShow2DMenu] = useState(false);
 
   const triggerToast = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
-
     setTimeout(() => setShowToast(false), 1500);
     setTimeout(() => setToastMessage(null), 2000);
   };
 
-  const handleProjectionChange = (mode: "Perspective" | "Orthographic") => {
+  const handleProjectionChange = async (mode: "Perspective" | "Orthographic") => {
+    const world = worldRef.current;
+    if (!world) return;
     if (mode === projection) return;
-    worldRef.current?.camera.projection.set(mode);
+
+    await world.camera.projection.set(mode);
     setProjection(mode);
     triggerToast(`Projection: ${mode}`);
   };
 
-  const handleNavigationChange = (mode: "Orbit" | "FirstPerson" | "Plan") => {
+  const handleNavigationChange = async (mode: "Orbit" | "FirstPerson" | "Plan") => {
+    const world = worldRef.current;
+    if (!world) return;
     if (mode === navigation) return;
-    worldRef.current?.camera.set(mode);
+
+    await world.camera.set(mode);
     setNavigation(mode);
-    if (mode === "FirstPerson" ) {
-      triggerToast(`Navigation Mode: First Person`);
-    } else {
-      triggerToast(`Navigation Mode: ${mode}`);
-    }
+    triggerToast(`Navigation Mode: ${mode === "FirstPerson" ? "First Person" : mode}`);
+  };
+
+  const handle2DView = async (
+    orientation: "top" | "bottom" | "front" | "back" | "left" | "right"
+  ) => {
+    const world = worldRef.current;
+    if (!world || !world.camera.hasCameraControls()) return;
+
+    const boxer = world.components.get(OBC.BoundingBoxer);
+    if (!boxer) return;
+
+    const { position, target } = await boxer.getCameraOrientation(orientation);
+    await world.camera.projection.set("Orthographic");
+    await world.camera.controls.setLookAt(
+      position.x,
+      position.y,
+      position.z,
+      target.x,
+      target.y,
+      target.z,
+      true
+    );
+
+    await world.camera.set("Plan");
+    setNavigation("Plan");
+    triggerToast(`2D View: ${orientation}`);
+  };
+
+  const close2DView = async () => {
+    const world = worldRef.current;
+    if (!world) return;
+
+    await world.camera.projection.set("Perspective");
+    await world.camera.set("Orbit");
+    setNavigation("Orbit");
+    triggerToast("Closed 2D View");
   };
 
   return (
     <>
       <div
-        className={`absolute top-15 left-8/17 transform -translate-x-1/2 flex gap-6 px-6 py-3 rounded-xl shadow-lg
+        className={`absolute top-15 left-3/7 transform -translate-x-1/2 flex gap-6 px-6 py-3 rounded-xl shadow-lg
           ${darkMode ? "bg-gray-800 text-amber-100" : "bg-white text-gray-900"}`}
       >
         {/* Projection */}
         <div className="flex flex-col items-center gap-2">
-            <span className="font-medium">Projection</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  worldRef.current?.camera.projection.set("Perspective");
-                  setProjection("Perspective");
-                  handleProjectionChange("Perspective");
-                }}
-                disabled={projection === "Perspective"}
-                className={`px-3 py-2 rounded-lg 
-                  ${projection === "Perspective"
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
-              >
-                Perspective
-              </button>
-
-              <button
-                onClick={() => {
+          <span className="font-medium">Projection</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleProjectionChange("Perspective")}
+              disabled={projection === "Perspective"}
+              className={`px-3 py-2 rounded-lg 
+                ${projection === "Perspective"
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+            >
+              Perspective
+            </button>
+            
+            <button
+              onClick={() => {
                   handleProjectionChange("Orthographic");
                   if (navigation === "FirstPerson"){
                     worldRef.current?.camera.set("Orbit");
@@ -84,69 +119,71 @@ export default function CameraControls({
                   worldRef.current?.camera.projection.set("Orthographic");
                   setProjection("Orthographic");                  
                 }}
-                disabled={projection === "Orthographic"}
-                className={`px-3 py-2 rounded-lg 
-                  ${projection === "Orthographic"
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
-              >
-                Orthographic
-              </button>
-            </div>
+              disabled={projection === "Orthographic"}
+              className={`px-3 py-2 rounded-lg 
+                ${projection === "Orthographic"
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+            >
+              Orthographic
+            </button>
           </div>
+        </div>
 
         <div className={`w-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
 
         {/* Navigation */}
         <div className="flex flex-col items-center gap-2">
-            <span className="font-medium">Navigation Mode</span>
-            <div className="flex gap-2">
+          <span className="font-medium">Navigation Mode</span>
+          <div className="flex gap-2">
+            {(["Orbit", "FirstPerson", "Plan"] as const).map((mode) => (
               <button
-                onClick={() => {
-                  worldRef.current?.camera.set("Orbit");
-                  setNavigation("Orbit");
-                  handleNavigationChange("Orbit");
-                }}
-                disabled={navigation === "Orbit"}
+                key={mode}
+                onClick={() => handleNavigationChange(mode)}
+                disabled={mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")}
                 className={`px-3 py-2 rounded-lg 
-                  ${navigation === "Orbit"
+                  ${mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")
                     ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                     : "bg-purple-600 text-white hover:bg-purple-700"}`}
               >
-                Orbit
+                {mode === "FirstPerson" ? "First Person" : mode}
               </button>
-
-              <button
-                onClick={() => {
-                  worldRef.current?.camera.set("FirstPerson");
-                  setNavigation("FirstPerson");
-                  handleNavigationChange("FirstPerson");
-                }}
-                disabled={navigation === "FirstPerson" || projection === "Orthographic"}
-                className={`px-3 py-2 rounded-lg 
-                  ${(navigation === "FirstPerson" || projection === "Orthographic")
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-purple-600 text-white hover:bg-purple-700"}`}
-              >
-                First Person
-              </button>
-
-              <button
-                onClick={() => {
-                  worldRef.current?.camera.set("Plan");
-                  setNavigation("Plan");
-                  handleNavigationChange("Plan");
-                }}
-                disabled={navigation === "Plan"}
-                className={`px-3 py-2 rounded-lg 
-                  ${navigation === "Plan"
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-purple-600 text-white hover:bg-purple-700"}`}
-              >
-                Plan
-              </button>
-            </div>
+            ))}
           </div>
+        </div>
+
+        <div className={`w-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
+
+        {/* 2D View Dropdown */}
+        <div className="flex flex-col items-center gap-2 relative">
+          <span className="font-medium">2D Views</span>
+          <button
+            onClick={() => setShow2DMenu((prev) => !prev)}
+            className="px-3 py-2 rounded-lg bg-yellow-600 text-white hover:bg-yellow-700"
+          >
+            2D View Menu
+          </button>
+
+          {show2DMenu && (
+            <div className="absolute top-18 left-0 flex flex-col gap-1 bg-gray-200 dark:bg-gray-700 p-2 rounded shadow-lg z-50">
+              <button
+                onClick={close2DView}
+                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Close 2D View
+              </button>
+              {["top", "bottom", "front", "back", "left", "right"].map((o) => (
+                <button
+                  key={o}
+                  onClick={() => handle2DView(o as any)}
+                  className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  {o.charAt(0).toUpperCase() + o.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className={`w-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
 

@@ -9,7 +9,7 @@ interface ViewOrientationProps {
   world: OBC.World;
 }
 
-const ViewOrientation: React.FC<ViewOrientationProps> = ({ world }) => {
+const ViewOrientation: React.FC<ViewOrientationProps> = ({ world, components }) => {
   const cubeRef = useRef<HTMLDivElement>(null);
   const [rotation, setRotation] = useState({ x: -20, y: 20 });
   const [hoverFace, setHoverFace] = useState<string | null>(null);
@@ -18,7 +18,7 @@ const ViewOrientation: React.FC<ViewOrientationProps> = ({ world }) => {
   const viewFromOrientation = async (
     orientation: "front" | "back" | "left" | "right" | "top" | "bottom"
   ) => {
-    const boxer = world.components.get(OBC.BoundingBoxer);
+    const boxer = components.get(OBC.BoundingBoxer);
     if (!world.camera.hasCameraControls()) return;
     const { position, target } = await boxer.getCameraOrientation(orientation);
     await world.camera.controls.setLookAt(
