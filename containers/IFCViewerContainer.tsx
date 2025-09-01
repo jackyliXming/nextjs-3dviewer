@@ -13,6 +13,7 @@ import ActionButtons from "@/components/IFCViewer/ActionButtons";
 import CameraControls from "@/components/IFCViewer/CameraControls";
 import ToolBar from "@/components/IFCViewer/ToolBar";
 import Viewpoints from "@/components/IFCViewer/Viewpoints";
+import ViewOrientation from "@/components/IFCViewer/ViewOrientation";
 
 interface UploadedModel {
   id: string;
@@ -61,6 +62,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [areaMode, setAreaMode] = useState<"free" | "square">("free");
   const [currentViewpoint, setCurrentViewpoint] = useState<OBC.Viewpoint | null>(null);
   const [storedViews, setStoredViews] = useState<StoredViewpoint[]>([]);
+  const [worldState, setWorldState] = useState<OBC.World | null>(null);
 
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       const worlds = components.get(OBC.Worlds);
       const world = worlds.create();
       worldRef.current = world;
+      setWorldState(world);
 
       const scene = new OBC.SimpleScene(components);
       world.scene = scene;
@@ -96,7 +99,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
       await ifcLoader.setup({
         autoSetWasm: false,
-        wasm: { path: "https://unpkg.com/web-ifc@0.0.70/", absolute: true },
+        wasm: { path: "https://unpkg.com/web-ifc@0.0.71/", absolute: true },
       });
 
       const githubUrl = "https://thatopen.github.io/engine_fragment/resources/worker.mjs";
@@ -777,6 +780,15 @@ const setWorldCamera = async () => {
         storedViews={storedViews}
         setStoredViews={setStoredViews}
       />
+
+{componentsRef.current && fragmentsRef.current && worldRef.current && (
+  <ViewOrientation
+    components={componentsRef.current}
+    fragments={fragmentsRef.current}
+    world={worldRef.current}
+  />
+)}
+
 
       <ActionButtons
         darkMode={darkMode}
