@@ -14,6 +14,7 @@ import CameraControls from "@/components/IFCViewer/CameraControls";
 import ToolBar from "@/components/IFCViewer/ToolBar";
 import Viewpoints from "@/components/IFCViewer/Viewpoints";
 import ViewOrientation from "@/components/IFCViewer/ViewOrientation";
+import BCFTopics from "@/components/IFCViewer/BCFTopics";
 
 interface UploadedModel {
   id: string;
@@ -43,6 +44,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const measurerRef = useRef<OBCF.LengthMeasurement | null>(null);
   const areaMeasurerRef = useRef<OBCF.AreaMeasurement | null>(null);
   const viewpointsRef = useRef<OBC.Viewpoints | null>(null);
+  const colorizeRef = useRef<{ enabled: boolean }>({ enabled: false });
+  const coloredElements = useRef<Record<string, Set<number>>>({});
 
   const [progress, setProgress] = useState<number>(0);
   const [showProgressModal, setShowProgressModal] = useState(false);
@@ -57,13 +60,15 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [projection, setProjection] = useState<"Perspective" | "Orthographic">("Perspective");
   const [navigation, setNavigation] = useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
   const [isGhost, setIsGhost] = useState(false);  
-  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | null>(null);  
+  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | "colorize" | null>(null);  
   const [lengthMode, setLengthMode] = useState<"free" | "edge">("free");
   const [areaMode, setAreaMode] = useState<"free" | "square">("free");
   const [currentViewpoint, setCurrentViewpoint] = useState<OBC.Viewpoint | null>(null);
   const [storedViews, setStoredViews] = useState<StoredViewpoint[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string>("#ffa500"); 
+  const selectedColorRef = useRef(selectedColor);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -157,6 +162,15 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       highlighter.setup({ world });
       highlighter.zoomToSelection = true;
 
+      if (!highlighter.styles.has("colorize")) {
+        highlighter.styles.set("colorize", {
+          color: new Color(selectedColorRef.current),
+          opacity: 1,
+          transparent: false,
+          renderedFaces: FRAGS.RenderedFaces.ONE,
+        });
+      }
+
       components.get(OBC.Hider);
 
       const handleClick = async (event: MouseEvent) => {
@@ -179,12 +193,18 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         }
 
         if (!hit) {
+          if (activeTool === "colorize") return;
           setInfoOpen(false);
           setSelectedModelId(null);
           setSelectedLocalId(null);
           setSelectedAttrs(null);
           setSelectedPsets(null);
           fragmentsRef.current.core.update(true);
+          return;
+        }
+
+        if (colorizeRef.current.enabled && hit) {
+          await handleClickColorizeElement(hit.modelId, hit.localId);
           return;
         }
 
@@ -291,19 +311,37 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   }, [componentsRef.current, worldRef.current, activeTool]);
 
   useEffect(() => {
-    if (!measurerRef.current || !areaMeasurerRef.current || !clipperRef.current) return;
+    if (!measurerRef.current || !areaMeasurerRef.current || !clipperRef.current || !colorizeRef.current) return;
 
     clipperRef.current.enabled = false;
     measurerRef.current.enabled = false;
     areaMeasurerRef.current.enabled = false;
+    colorizeRef.current.enabled = false;
 
-    if (activeTool === "length") {
-      measurerRef.current.enabled = true;
-    } else if (activeTool === "area") {
-      areaMeasurerRef.current.enabled = true;
-    } else if (activeTool === "clipper") {
-      clipperRef.current.enabled = true;
+    const highlighter = componentsRef.current?.get(OBCF.Highlighter);
+
+    switch (activeTool) {
+      case "length":
+        measurerRef.current.enabled = true;
+        if (highlighter) highlighter.enabled = false;
+        break;
+      case "area":
+        areaMeasurerRef.current.enabled = true;
+        if (highlighter) highlighter.enabled = false;
+        break;
+      case "clipper":
+        clipperRef.current.enabled = true;
+        if (highlighter) highlighter.enabled = false;
+        break;
+      case "colorize":
+        colorizeRef.current.enabled = true;
+        if (highlighter) highlighter.enabled = false;
+        break;
+      default:
+        if (highlighter) highlighter.enabled = true;
+        break;
     }
+
   }, [activeTool]);
 
   useEffect(() => {
@@ -317,6 +355,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       areaMeasurerRef.current.mode = areaMode;
     }
   }, [areaMode]);
+
+  useEffect(() => {
+    selectedColorRef.current = selectedColor;
+  }, [selectedColor]);
 
   const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -354,7 +396,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       setProgress(100);
       await new Promise((r) => setTimeout(r, 300));
 
-      await loadCategories(fragModel);
+      await loadCategoriesFromAllModels();
     } catch (err) {
       console.error("Failed to load IFC:", err);
     } finally {
@@ -602,9 +644,12 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
     clipperRef.current.enabled = !isActive;
 
-    if (measurerRef.current) measurerRef.current.list.clear();
-    if (areaMeasurerRef.current) areaMeasurerRef.current.list.clear();
-    if (isActive) clipperRef.current.list.clear();
+    if (measurerRef.current) 
+      measurerRef.current.list.clear();
+    if (areaMeasurerRef.current) 
+      areaMeasurerRef.current.list.clear();
+    if (isActive) 
+      clipperRef.current.list.clear();
   };
 
   const handleLength = () => {
@@ -631,12 +676,12 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
     areaMeasurerRef.current.enabled = !isActive;
 
-    if (measurerRef.current){
+    if (clipperRef.current) 
+      clipperRef.current.list.clear();
+    if (measurerRef.current)
       measurerRef.current.list.clear();
-    }
-    if (isActive) {
+    if (isActive) 
       areaMeasurerRef.current.list.clear();
-    }
   };
 
   const deleteSelectedModel = (model: UploadedModel) => {
@@ -723,18 +768,19 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     return String(data);
   };
 
-  const loadCategories = async (model: FRAGS.FragmentsModel) => {
-    if (!model) return;
+  const loadCategoriesFromAllModels = async () => {
+    if (!fragmentsRef.current) return;
 
-    const allCats = await model.getItemsOfCategories([/.*/]);
-    const categoryList = Object.keys(allCats).sort();
+    const allCats: Set<string> = new Set();
 
-    setCategories(categoryList);
-
-    if (!selectedCategory && categoryList.length > 0) {
-      setSelectedCategory(categoryList[0]);
+    for (const model of fragmentsRef.current.list.values()) {
+      const cats = await model.getItemsOfCategories([/.*/]);
+      Object.keys(cats).forEach((c) => allCats.add(c));
     }
+
+    setCategories(Array.from(allCats).sort());
   };
+
 
   const isolateCategory = async (category: string | null) => {
     if (!category || !fragmentsRef.current) return;
@@ -771,6 +817,74 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     }, 100);
   };
 
+  const handleColorize = (color?: string) => {
+    if (!color) return;
+    setSelectedColor(color);
+  };
+
+  const handleClickColorizeElement = async (modelId: string, localId: number) => {
+    if (!fragmentsRef.current || !colorizeRef.current.enabled) return;
+
+    if (!coloredElements.current[modelId]) coloredElements.current[modelId] = new Set();
+
+    if (coloredElements.current[modelId].has(localId)) return;
+
+    coloredElements.current[modelId].add(localId);
+
+    const modelIdMap: Record<string, Set<number>> = {
+      [modelId]: new Set([localId])
+    };
+
+    await fragmentsRef.current.highlight(
+      {
+        color: new Color(selectedColorRef.current),
+        renderedFaces: FRAGS.RenderedFaces.ONE,
+        opacity: 1,
+        transparent: false,
+      },
+      modelIdMap
+    );
+
+    await fragmentsRef.current.core.update(true);
+  };
+
+  const handleColorizeToggle = () => {
+    if (!componentsRef.current || !fragmentsRef.current) return;
+
+    const isActive = activeTool === "colorize";
+    setActiveTool(isActive ? null : "colorize");
+
+    colorizeRef.current.enabled = !isActive;
+
+    if (clipperRef.current) clipperRef.current.enabled = false;
+    if (measurerRef.current) measurerRef.current.enabled = false;
+    if (areaMeasurerRef.current) areaMeasurerRef.current.enabled = false;
+
+    if (isActive)
+      restoreModelMaterials();
+  };
+
+  const handleClearColor = async () => {
+  if (!componentsRef.current) return;
+
+  const highlighter = componentsRef.current.get(OBCF.Highlighter);
+  if (!highlighter) return;
+
+  const styleName = "colorize";
+
+  // 清除所有 colorize highlight
+  if (highlighter.styles.has(styleName)) {
+    await highlighter.clear(styleName);
+  }
+
+  // 選擇性清空 coloredElements 記錄
+  coloredElements.current = {};
+
+  console.log("clear color");
+};
+
+
+
   return (
     <div className="flex w-full h-screen">
        {/* Sidebar */}
@@ -805,11 +919,14 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           if (tool === "length") handleLength();
           else if (tool === "clipper") handleClipper();
           else if (tool === "area") handleArea();
+          else if (tool === "colorize") handleColorizeToggle();
         }}
         lengthMode={lengthMode}
         setLengthMode={setLengthMode}
         areaMode={areaMode}
         setAreaMode={setAreaMode}
+        onColorize={handleColorize}
+        onClearColor={handleClearColor}
       />
 
       <CameraControls

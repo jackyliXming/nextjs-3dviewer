@@ -1,24 +1,28 @@
 "use client";
 
-import React from "react";
-import { Scissors, Ruler, Square } from "lucide-react";
+import React, {useState } from "react";
+import { Scissors, Ruler, Square, PaintBucket } from "lucide-react";
 
 interface ToolBarProps {
   darkMode: boolean;
-  activeTool: "clipper" | "length" | "area" | null;
-  onSelectTool: (tool: "clipper" | "length" | "area" | null) => void;
+  activeTool: "clipper" | "length" | "area" | "colorize" | null;
+  onSelectTool: (tool: "clipper" | "length" | "area" | "colorize" | null) => void;
   lengthMode: "free" | "edge";
   setLengthMode: (mode: "free" | "edge") => void;
   areaMode: "free" | "square";
   setAreaMode: (mode: "free" | "square") => void;
+  onColorize?: (color?: string) => void;
+  onClearColor?: () => void;
 }
 
-export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode, setLengthMode, areaMode, setAreaMode }: ToolBarProps) {
-  const handleClick = (tool: "clipper" | "length" | "area") => {
+export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode, setLengthMode, areaMode, setAreaMode, onColorize, onClearColor, }: ToolBarProps) {
+  const [pickedColor, setPickedColor] = useState<string>("#ff6600");
+
+  const handleClick = (tool: "clipper" | "length" | "area" | "colorize") => {
     onSelectTool(tool);
   };
 
-  const btnStyle = (tool: "clipper" | "length" | "area") =>
+  const btnStyle = (tool: "clipper" | "length" | "area" | "colorize" ) =>
     `flex left-2 items-center justify-center w-12 h-12 rounded-lg transition-colors relative ${
       activeTool === tool
         ? darkMode
@@ -29,7 +33,7 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
         : "bg-gray-700 text-gray-400 hover:bg-gray-200"
     }`;
 
-  const tooltipStyle = (tool: "clipper" | "length" | "area", label: string) =>
+  const tooltipStyle = (tool: "clipper" | "length" | "area" | "colorize" , label: string) =>
     `absolute left-12 top-1/2 -translate-y-1/2 ml-2 px-2 py-1 rounded-md text-sm font-medium z-10 whitespace-nowrap shadow-lg ${
       darkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-black"
     } ${activeTool === tool ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity duration-200`;
@@ -84,6 +88,47 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
             <span><b>*Click the delete button below:</b> Delete All</span>
           </div>        
       );
+      case "colorize":
+        return (
+          <div className="text-left">
+            <div className="mb-1 font-bold text-center">
+              <span><b>Colorize</b></span>
+            </div>
+            <hr />
+            <span><b>*Left Click:</b> Colorize element.</span>
+            {activeTool === "colorize" && (
+              <div className="mt-2 flex flex-col gap-2">
+                <label className="flex items-center gap-2">
+                  <span>Pick Color:</span>
+                  <input
+                    type="color"
+                    value={pickedColor}
+                    onChange={(e) => {
+                      const color = e.target.value;
+                      setPickedColor(color);
+                      if (onColorize) onColorize(color);
+                    }}
+                    className="w-10 h-8 p-0 border-0 rounded cursor-pointer"
+                  />
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    className="px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600"
+                    onClick={() => onClearColor && onClearColor()}
+                  >
+                    Clear Color
+                  </button>
+                  <button
+                    className="px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
+                    onClick={() => onColorize && onColorize(pickedColor)}
+                  >
+                    Apply Color
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
       default:
         return null;
     }
@@ -111,8 +156,19 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
         </button>
         <span className={tooltipStyle("area", "Area")}>Area Measurement</span>
       </div>
+
+      <div className="group relative">
+        <button
+          className={btnStyle("colorize")}
+          onClick={() => handleClick("colorize")}
+        >
+          <PaintBucket size={24} />
+        </button>
+        <span className={tooltipStyle("colorize","Colorize")}>Colorize</span>
+      </div>
+
       <div
-        className={`opacity-60 mt-6 w-45 text-sm rounded-lg p-1 shadow-md ${
+        className={`opacity-70 mt-6 w-45 text-sm rounded-lg p-1 shadow-md ${
           darkMode ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-800"
         }`}
       >
