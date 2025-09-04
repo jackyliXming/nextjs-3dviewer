@@ -38,7 +38,7 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
       darkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-black"
     } ${activeTool === tool ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity duration-200`;
 
-   const getDescription = () => {
+  const getDescription = () => {
     switch (activeTool) {
       case "clipper":
         return (

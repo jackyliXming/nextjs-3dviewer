@@ -67,6 +67,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [storedViews, setStoredViews] = useState<StoredViewpoint[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [components, setComponents] = useState<OBC.Components | null>(null);
+
   const [selectedColor, setSelectedColor] = useState<string>("#ffa500"); 
   const selectedColorRef = useRef(selectedColor);
 
@@ -172,6 +174,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       }
 
       components.get(OBC.Hider);
+
+      const comp = new OBC.Components();
+      comp.init();
+      setComponents(comp);
 
       const handleClick = async (event: MouseEvent) => {
         if (!fragmentsRef.current || !worldRef.current?.renderer) return;
@@ -865,23 +871,21 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   };
 
   const handleClearColor = async () => {
-  if (!componentsRef.current) return;
+    if (!componentsRef.current) return;
 
-  const highlighter = componentsRef.current.get(OBCF.Highlighter);
-  if (!highlighter) return;
+    const highlighter = componentsRef.current.get(OBCF.Highlighter);
+    if (!highlighter) return;
 
-  const styleName = "colorize";
+    const styleName = "colorize";
 
-  // 清除所有 colorize highlight
-  if (highlighter.styles.has(styleName)) {
-    await highlighter.clear(styleName);
-  }
+    if (highlighter.styles.has(styleName)) {
+      await highlighter.clear(styleName);
+    }
 
-  // 選擇性清空 coloredElements 記錄
-  coloredElements.current = {};
+    coloredElements.current = {};
 
-  console.log("clear color");
-};
+    console.log("clear color");
+  };
 
 
 
@@ -964,6 +968,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         onGhost={handleGhost}
         isGhost={isGhost}
       />
+
+      {components && <BCFTopics components={components} world={worldRef.current}/>}
 
       {/* Info Panel */}
       {infoOpen && (

@@ -119,7 +119,7 @@ export default function IFCInfoPanel({ darkMode, infoLoading, modelId, localId, 
                 <div key={pset} className="mb-2">
                   <div className="font-medium mb-1">{pset}</div>
                   <ul className={`text-xs ${darkMode ? "bg-gray-800" : "bg-gray-100"} rounded p-2 space-y-1`}>
-                    {Object.entries(props).map(([propKey, value]) => (
+                    {Object.entries(props as Record<string, any>).map(([propKey, value]) => (
                       <li key={propKey} className="flex justify-between border-b border-gray-600/30 pb-1">
                         <span className={`flex items-center gap-2 px-4 py-2 rounded-lg ${darkMode ? "bg-green-800 hover:bg-green-900" : "bg-green-600 hover:bg-green-700"} text-white`}>{propKey}</span>
                         <span className="flex items-center px-2">{String(value)}</span>
