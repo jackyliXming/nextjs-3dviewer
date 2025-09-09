@@ -69,7 +69,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [components, setComponents] = useState<OBC.Components | null>(null);
 
-  const [selectedColor, setSelectedColor] = useState<string>("#ffa500"); 
+  const [selectedColor, setSelectedColor] = useState<string>("#ffa500");
   const selectedColorRef = useRef(selectedColor);
 
   useEffect(() => {
@@ -136,26 +136,6 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       viewpoints.world = world;
       viewpointsRef.current = viewpoints;
 
-      viewpoints.list.onItemSet.add(({ value: viewpoint }) => {
-        viewpoint.selectionComponents.add(
-          "3V$FMCDUfCoPwUaHMPfteW",
-          "1fIVuvFffDJRV_SJESOtCZ",
-        );
-      });
-
-      viewpoints.list.onItemSet.add(async ({ value: viewpoint }) => {
-        const finder = components.get(OBC.ItemsFinder);
-        const doors = await finder.getItems([{ categories: [/DOOR/] }]);
-        const guids = await fragments.modelIdMapToGuids(doors);
-        viewpoint.selectionComponents.add(...guids);
-      });
-
-      viewpoints.list.onItemSet.add(({ value: viewpoint }) => {
-        const bcfTopics = components.get(OBC.BCFTopics);
-        const topic = bcfTopics.create();
-        topic.viewpoints.add(viewpoint.guid);
-      });
-
       const clipper = components.get(OBC.Clipper);
       clipper.enabled = false;
       clipperRef.current = clipper;
@@ -175,9 +155,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
       components.get(OBC.Hider);
 
-      const comp = new OBC.Components();
-      comp.init();
-      setComponents(comp);
+      setComponents(components);
 
       const handleClick = async (event: MouseEvent) => {
         if (!fragmentsRef.current || !worldRef.current?.renderer) return;
@@ -564,12 +542,13 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     }
   };
   
-  const onIsolate = () => {
+  const onIsolate = async () => {
     const highlighter = componentsRef.current?.get(OBCF.Highlighter);
     const hider = componentsRef.current?.get(OBC.Hider);
     if (!highlighter || !hider) return;
     const selection = highlighter.selection.select;
-    hider.isolate(selection);
+    await hider.set(false);
+    await hider.set(true, selection);
   };
   
   const onShow = async () => {
@@ -810,7 +789,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       }
     }
 
-    hider.isolate(selection);
+    await hider.set(false);
+    await hider.set(true, selection);
 
     fragments.core.update(true);
   };
@@ -883,11 +863,31 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     }
 
     coloredElements.current = {};
-
-    console.log("clear color");
   };
 
+  const goToTopicViewpoint = async (topic: OBC.Topic) => {
+    if (!componentsRef.current || !topic.viewpoints.size) return;
+  
+    const viewpoints = componentsRef.current.get(OBC.Viewpoints);
+    const firstViewpointGuid = topic.viewpoints.values().next().value;
+    
+    if (firstViewpointGuid) {
+      const viewpoint = viewpoints.list.get(firstViewpointGuid);
+      if (viewpoint) {
+        await viewpoint.go();
+        
+        const highlighter = componentsRef.current.get(OBCF.Highlighter);
+        await highlighter.clear("select");
 
+        if (viewpoint.selectionComponents.size > 0) {
+          const fragments = componentsRef.current.get(OBC.FragmentsManager);
+          const selection = await fragments.guidsToModelIdMap(viewpoint.selectionComponents);
+          
+          await highlighter.highlight("select", selection);
+        }
+      }
+    }
+  };
 
   return (
     <div className="flex w-full h-screen">
@@ -969,7 +969,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         isGhost={isGhost}
       />
 
-      {components && <BCFTopics components={components} world={worldRef.current}/>}
+      {components && <BCFTopics components={components} world={worldRef.current} darkMode={darkMode} onTopicClick={goToTopicViewpoint}/>}
 
       {/* Info Panel */}
       {infoOpen && (
