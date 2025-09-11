@@ -35,7 +35,6 @@ interface ExtendedTopic extends OBC.Topic {
   history?: HistoryRecord[];
 }
 
-
 const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTopicClick }) => {
   const [bcfTopics, setBcfTopics] = useState<OBC.BCFTopics | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<OBC.Topic | null>(null);
@@ -44,7 +43,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
-  const [selectionForTopic, setSelectionForTopic] = useState<OBC.ModelIdMap | null>(null);
+  const [selectionForTopic, setSelectionForTopic] = useState<Set<string> | null>(null);
   const [newComment, setNewComment] = useState({ name: "", comment: "" });
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -73,26 +72,34 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
     };
   }, [components]);
 
-  const createTopic = (e: React.MouseEvent) => {
+  const createTopic = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
     const highlighter = components.get(OBCF.Highlighter);
-    const selection = highlighter.selection.select;
-    if (Object.keys(selection).length === 0) {
+    
+    const currentSelection = structuredClone(highlighter.selection.select);
+
+    if (Object.keys(currentSelection).length === 0) {
       alert("Please select an element before creating a topic.");
       return;
     }
-    const selectionCopy: OBC.ModelIdMap = {};
-    for (const modelID in selection) {
-      if (Object.prototype.hasOwnProperty.call(selection, modelID)) {
-        selectionCopy[modelID] = new Set(selection[modelID]);
-      }
-    }
-    setSelectionForTopic(selectionCopy);
+
+    const fragments = components.get(OBC.FragmentsManager);
+    const guids = await fragments.modelIdMapToGuids(currentSelection);
+
+    const guidsSet = new Set([...guids]);
+
+    console.log(" CreateTopic - Stored GUIDs:", [...guidsSet]);
+
+    await highlighter.clear("select");
+    setSelectionForTopic(guidsSet)
     setCreateModalOpen(true);
   };
 
   const handleCreateTopic = async (formData: any) => {
     if (!bcfTopics || !selectionForTopic) return;
+
+    console.log(" HandleCreateTopic - Using GUIDs:", [...selectionForTopic]);
 
     const topic = bcfTopics.create({
       title: formData.title,
@@ -110,13 +117,8 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
     if (vp) {
       vp.world = world;
       await vp.updateCamera();
-      const fragments = components.get(OBC.FragmentsManager);
-      const guids = await fragments.modelIdMapToGuids(selectionForTopic);
-      const guidsSet = new Set<string>();
-      for (const guid of guids) {
-        guidsSet.add(guid);
-      }
-      vp.selectionComponents.add(...guidsSet);
+      vp.selectionComponents.add(...selectionForTopic);
+      console.log(" HandleCreateTopic - Saved to Viewpoint:", [...vp.selectionComponents]);
       topic.viewpoints.add(vp.guid);
     }
 
@@ -258,6 +260,16 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
     document.removeEventListener("mouseup", onMouseUp);
   };
 
+  const handleMouseEnter = () => {
+    const highlighter = components.get(OBCF.Highlighter);
+    highlighter.enabled = false;
+  };
+
+  const handleMouseLeave = () => {
+    const highlighter = components.get(OBCF.Highlighter);
+    highlighter.enabled = true;
+  };
+
   return (
     <div
       ref={panelRef}
@@ -266,6 +278,8 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
       }`}
       style={{ bottom: "1rem", right: "1rem" }}
       onPointerDown={(e) => e.stopPropagation()}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div
         className={`${darkMode ? "bg-blue-900" : "bg-blue-800"} text-amber-100 px-2 py-1 flex justify-between items-center font-bold cursor-grab select-none`}
@@ -308,9 +322,12 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
                 {topicsList.map((topic) => (
                   <li
                     key={topic.guid}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedTopic(topic);
                       if (onTopicClick) {
+                        const highlighter = components.get(OBCF.Highlighter);
+                        highlighter.enabled = true;
                         onTopicClick(topic);
                       }
                     }}
@@ -342,12 +359,6 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
                   >
                     Edit
                   </button>
-                  <button
-                    onClick={() => setHistoryModalOpen(true)}
-                    className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
-                  >
-                    History
-                  </button>
                   </div>
                 )}
               </div>
@@ -363,6 +374,14 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
                   <p><strong>Due Date:</strong> {selectedTopic.dueDate?.toLocaleDateString()}</p>
                   <p><strong>Status:</strong> {selectedTopic.status || "No status"}</p>
                   <p><strong>Viewpoints:</strong> {Array.from(selectedTopic.viewpoints).join(", ")}</p>
+                  <div className="flex justify-end mt-2">
+                    <button
+                      onClick={() => setHistoryModalOpen(true)}
+                      className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
+                    >
+                      History
+                    </button>
+                  </div>
                   <div className="mt-4 pt-2 border-t border-gray-600">
                     <h6 className="font-semibold mb-2">Comments</h6>
                     <div className="space-y-2 max-h-40 overflow-y-auto mb-2">
@@ -650,7 +669,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
               className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-md shadow-sm p-2`}
             />
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-center gap-2">
             <button type="button" onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Cancel</button>
             <button type="submit" className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded ${titleExists ? "opacity-50 cursor-not-allowed" : ""}`} disabled={titleExists}>Add Topic</button>
           </div>
@@ -926,7 +945,7 @@ const HistoryModal = ({ onClose, topic, darkMode }: any) => {
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div
-        className={`${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} p-4 rounded-lg shadow-lg w-2/3 max-h-[80vh] overflow-y-auto`}
+        className={`${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} p-4 rounded-lg shadow-lg w-1/2 max-h-[80vh] overflow-y-auto`}
       >
         <h3 className="text-lg font-bold mb-4">History - {topic.title}</h3>
 

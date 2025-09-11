@@ -15,6 +15,7 @@ import ToolBar from "@/components/IFCViewer/ToolBar";
 import Viewpoints from "@/components/IFCViewer/Viewpoints";
 import ViewOrientation from "@/components/IFCViewer/ViewOrientation";
 import BCFTopics from "@/components/IFCViewer/BCFTopics";
+import CollisionDetector from "@/components/IFCViewer/CollisionDetector";
 
 interface UploadedModel {
   id: string;
@@ -60,7 +61,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [projection, setProjection] = useState<"Perspective" | "Orthographic">("Perspective");
   const [navigation, setNavigation] = useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
   const [isGhost, setIsGhost] = useState(false);  
-  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | "colorize" | null>(null);  
+  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | "colorize" | "collision" | null>(null);  
   const [lengthMode, setLengthMode] = useState<"free" | "edge">("free");
   const [areaMode, setAreaMode] = useState<"free" | "square">("free");
   const [currentViewpoint, setCurrentViewpoint] = useState<OBC.Viewpoint | null>(null);
@@ -68,6 +69,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [components, setComponents] = useState<OBC.Components | null>(null);
+  const [isCollisionModalOpen, setIsCollisionModalOpen] = useState(false);
 
   const [selectedColor, setSelectedColor] = useState<string>("#ffa500");
   const selectedColorRef = useRef(selectedColor);
@@ -320,6 +322,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       case "colorize":
         colorizeRef.current.enabled = true;
         if (highlighter) highlighter.enabled = false;
+        break;
+      case "collision":
+        setIsCollisionModalOpen(true);
+        if (highlighter) highlighter.enabled = true;
         break;
       default:
         if (highlighter) highlighter.enabled = true;
@@ -867,23 +873,31 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
   const goToTopicViewpoint = async (topic: OBC.Topic) => {
     if (!componentsRef.current || !topic.viewpoints.size) return;
-  
+
     const viewpoints = componentsRef.current.get(OBC.Viewpoints);
+    const highlighter = componentsRef.current.get(OBCF.Highlighter);
+    const fragments = componentsRef.current.get(OBC.FragmentsManager);
+
+    if (!viewpoints || !highlighter || !fragments) return;
+
     const firstViewpointGuid = topic.viewpoints.values().next().value;
-    
+
     if (firstViewpointGuid) {
       const viewpoint = viewpoints.list.get(firstViewpointGuid);
       if (viewpoint) {
         await viewpoint.go();
-        
-        const highlighter = componentsRef.current.get(OBCF.Highlighter);
-        await highlighter.clear("select");
+
+        await highlighter.clear();
 
         if (viewpoint.selectionComponents.size > 0) {
-          const fragments = componentsRef.current.get(OBC.FragmentsManager);
-          const selection = await fragments.guidsToModelIdMap(viewpoint.selectionComponents);
-          
-          await highlighter.highlight("select", selection);
+          const guidArray = Array.from(viewpoint.selectionComponents);
+          console.log("GoToTopic - Loaded GUIDs from Viewpoint:", guidArray );
+
+          const selection = await fragments.guidsToModelIdMap(guidArray);
+          console.log("GoToTopic - Converted ModelIdMap:", selection);
+
+          highlighter.selection.select = selection;
+          await highlighter.highlight("select");
         }
       }
     }
@@ -924,6 +938,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           else if (tool === "clipper") handleClipper();
           else if (tool === "area") handleArea();
           else if (tool === "colorize") handleColorizeToggle();
+          else if (tool === "collision") {
+            setActiveTool(tool);
+            setIsCollisionModalOpen(true);
+          }
         }}
         lengthMode={lengthMode}
         setLengthMode={setLengthMode}
@@ -969,7 +987,27 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         isGhost={isGhost}
       />
 
-      {components && <BCFTopics components={components} world={worldRef.current} darkMode={darkMode} onTopicClick={goToTopicViewpoint}/>}
+      {components && (
+        <BCFTopics 
+          components={components} 
+          world={worldRef.current} 
+          darkMode={darkMode} 
+          onTopicClick={goToTopicViewpoint}
+        />
+      )}
+
+      {components && worldRef.current && (
+        <CollisionDetector
+          isOpen={isCollisionModalOpen}
+          onClose={() => {
+            setIsCollisionModalOpen(false);
+            setActiveTool(null);
+          }}
+          components={components}
+          world={worldRef.current}
+          darkMode={darkMode}
+        />
+      )}
 
       {/* Info Panel */}
       {infoOpen && (

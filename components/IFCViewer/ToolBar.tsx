@@ -1,12 +1,12 @@
 "use client";
 
 import React, {useState } from "react";
-import { Scissors, Ruler, Square, PaintBucket } from "lucide-react";
+import { Scissors, Ruler, Square, PaintBucket, AlertTriangle } from "lucide-react";
 
 interface ToolBarProps {
   darkMode: boolean;
-  activeTool: "clipper" | "length" | "area" | "colorize" | null;
-  onSelectTool: (tool: "clipper" | "length" | "area" | "colorize" | null) => void;
+  activeTool: "clipper" | "length" | "area" | "colorize" | "collision" | null;
+  onSelectTool: (tool: "clipper" | "length" | "area" | "colorize" | "collision" | null) => void;
   lengthMode: "free" | "edge";
   setLengthMode: (mode: "free" | "edge") => void;
   areaMode: "free" | "square";
@@ -18,11 +18,11 @@ interface ToolBarProps {
 export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode, setLengthMode, areaMode, setAreaMode, onColorize, onClearColor, }: ToolBarProps) {
   const [pickedColor, setPickedColor] = useState<string>("#ff6600");
 
-  const handleClick = (tool: "clipper" | "length" | "area" | "colorize") => {
+  const handleClick = (tool: "clipper" | "length" | "area" | "colorize" | "collision") => {
     onSelectTool(tool);
   };
 
-  const btnStyle = (tool: "clipper" | "length" | "area" | "colorize" ) =>
+  const btnStyle = (tool: "clipper" | "length" | "area" | "colorize" | "collision" ) =>
     `flex left-2 items-center justify-center w-12 h-12 rounded-lg transition-colors relative ${
       activeTool === tool
         ? darkMode
@@ -33,7 +33,7 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
         : "bg-gray-700 text-gray-400 hover:bg-gray-200"
     }`;
 
-  const tooltipStyle = (tool: "clipper" | "length" | "area" | "colorize" , label: string) =>
+  const tooltipStyle = (tool: "clipper" | "length" | "area" | "colorize" | "collision" , label: string) =>
     `absolute left-12 top-1/2 -translate-y-1/2 ml-2 px-2 py-1 rounded-md text-sm font-medium z-10 whitespace-nowrap shadow-lg ${
       darkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-black"
     } ${activeTool === tool ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity duration-200`;
@@ -165,6 +165,16 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
           <PaintBucket size={24} />
         </button>
         <span className={tooltipStyle("colorize","Colorize")}>Colorize</span>
+      </div>
+
+      <div className="group relative">
+        <button
+          className={btnStyle("collision")}
+          onClick={() => handleClick("collision")}
+        >
+          <AlertTriangle size={24} />
+        </button>
+        <span className={tooltipStyle("collision","Collision")}>Collision Detection</span>
       </div>
 
       <div
