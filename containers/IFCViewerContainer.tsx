@@ -951,6 +951,19 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
         onClearColor={handleClearColor}
       />
 
+      {components && worldRef.current && (
+        <CollisionDetector
+          isOpen={isCollisionModalOpen}
+          onClose={() => {
+            setIsCollisionModalOpen(false);
+            setActiveTool(null);
+          }}
+          components={components}
+          world={worldRef.current}
+          darkMode={darkMode}
+        />
+      )}
+
       <CameraControls
         darkMode={darkMode}
         projection={projection}
@@ -993,19 +1006,6 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           world={worldRef.current} 
           darkMode={darkMode} 
           onTopicClick={goToTopicViewpoint}
-        />
-      )}
-
-      {components && worldRef.current && (
-        <CollisionDetector
-          isOpen={isCollisionModalOpen}
-          onClose={() => {
-            setIsCollisionModalOpen(false);
-            setActiveTool(null);
-          }}
-          components={components}
-          world={worldRef.current}
-          darkMode={darkMode}
         />
       )}
 

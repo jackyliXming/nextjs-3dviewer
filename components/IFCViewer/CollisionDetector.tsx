@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import * as THREE from "three";
+import * as FRAGS from "@thatopen/fragments";
 
 interface CollisionDetectorProps {
   isOpen: boolean;
@@ -16,7 +17,6 @@ interface CollisionDetectorProps {
 type ItemWithBox = { modelId: string; itemId: string; box: THREE.Box3 };
 
 const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, components, world, darkMode }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [results, setResults] = useState<{ item1: ItemWithBox; item2: ItemWithBox }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -42,7 +42,6 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
 
     const fragments = components.get(OBC.FragmentsManager);
     const boxer = boxerRef.current;
-    const bcf = components.get(OBC.BCFTopics);
     const highlighter = components.get(OBCF.Highlighter) as OBCF.Highlighter;
 
     if (!highlighter) {
@@ -126,7 +125,6 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
     await new Promise(resolve => setTimeout(resolve, 0));
 
     const collisions: { item1: ItemWithBox; item2: ItemWithBox }[] = [];
-    const collidingItemsMapForHighlighter: OBC.ModelIdMap = {};
     let comparisons = 0;
 
     for (let i = 0; i < itemsWithBoxes.length; i++) {
@@ -136,16 +134,6 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
 
         if (item1.box.intersectsBox(item2.box)) {
           collisions.push({ item1, item2 });
-          const itemId1Num = parseInt(item1.itemId, 10);
-          const itemId2Num = parseInt(item2.itemId, 10);
-          if (!collidingItemsMapForHighlighter[item1.modelId]) {
-            collidingItemsMapForHighlighter[item1.modelId] = new Set();
-          }
-          collidingItemsMapForHighlighter[item1.modelId].add(itemId1Num);
-          if (!collidingItemsMapForHighlighter[item2.modelId]) {
-            collidingItemsMapForHighlighter[item2.modelId] = new Set();
-          }
-          collidingItemsMapForHighlighter[item2.modelId].add(itemId2Num);
         }
 
         comparisons++;
@@ -160,34 +148,82 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
     
     setResults(collisions);
     
-    if (collisions.length > 0) {
-        highlighter.selection.select = collidingItemsMapForHighlighter;
-        await highlighter.highlight("select");
-        const firstCollision = collisions[0];
-        const viewpoints = components.get(OBC.Viewpoints);
-        if (viewpoints) {
-            const viewpoint = viewpoints.create();
-            const { box: box1 } = firstCollision.item1;
-            const { box: box2 } = firstCollision.item2;
-            const unionBox = box1.clone().union(box2);
-            const center = new THREE.Vector3();
-            unionBox.getCenter(center);
-            const camera = world.camera as OBC.OrthoPerspectiveCamera;
-            await camera.controls.setLookAt(center.x + 5, center.y + 5, center.z + 5, center.x, center.y, center.z);
-            await viewpoint.updateCamera();
-            if (bcf) {
-                const topic = bcf.create({
-                  title: "Collision Detected",
-                  description: `Collision between element ${firstCollision.item1.itemId} and ${firstCollision.item2.itemId}`,
-                });
-                topic.viewpoints.add(viewpoint.guid);
-            }
-        }
-    }
-    
     setStatus(collisions.length > 0 ? `${collisions.length} collisions found.` : "No collisions found.");
     await new Promise(resolve => setTimeout(resolve, 2000));
     setIsLoading(false);
+  };
+
+  const boundingBoxHelpers = useRef<THREE.Box3Helper[]>([]);
+
+  const handleCollisionClick = async (collision: { item1: ItemWithBox; item2: ItemWithBox }) => {
+    const { item1, item2 } = collision;
+    const fragments = components.get(OBC.FragmentsManager);
+    const hider = components.get(OBC.Hider);
+    if (!fragments || !hider) return;
+
+    for (const helper of boundingBoxHelpers.current) {
+      world.scene.three.remove(helper);
+      helper.dispose();
+    }
+    boundingBoxHelpers.current = [];
+
+    const selection: OBC.ModelIdMap = {};
+    
+    const id1 = parseInt(item1.itemId, 10);
+    if (!selection[item1.modelId]) {
+      selection[item1.modelId] = new Set();
+    }
+    selection[item1.modelId].add(id1);
+
+    const id2 = parseInt(item2.itemId, 10);
+    if (!selection[item2.modelId]) {
+      selection[item2.modelId] = new Set();
+    }
+    selection[item2.modelId].add(id2);
+
+    await hider.set(false);
+    await hider.set(true, selection);
+    
+    const highlighter = components.get(OBCF.Highlighter);
+    await highlighter.clear();
+
+    await fragments.highlight(
+      {
+        color: new THREE.Color("red"),
+        renderedFaces: FRAGS.RenderedFaces.ONE,
+        opacity: 1,
+        transparent: false,
+      },
+      { [item1.modelId]: new Set([parseInt(item1.itemId, 10)]) }
+    );
+
+    await fragments.highlight(
+      {
+        color: new THREE.Color("orange"),
+        renderedFaces: FRAGS.RenderedFaces.ONE,
+        opacity: 1,
+        transparent: false,
+      },
+      { [item2.modelId]: new Set([parseInt(item2.itemId, 10)]) }
+    );
+
+    const helper1 = new THREE.Box3Helper(item1.box, new THREE.Color("red"));
+    const helper2 = new THREE.Box3Helper(item2.box, new THREE.Color("orange"));
+    world.scene.three.add(helper1, helper2);
+    boundingBoxHelpers.current.push(helper1, helper2);
+
+    await fragments.core.update(true);
+
+    onClose();
+
+    const unionBox = item1.box.clone().union(item2.box);
+    const center = new THREE.Vector3();
+    unionBox.getCenter(center);
+    const size = new THREE.Vector3();
+    unionBox.getSize(size);
+    const camera = world.camera as OBC.OrthoPerspectiveCamera;
+    const newPos = new THREE.Vector3(center.x + size.x, center.y + size.y, center.z + size.z);
+    await camera.controls.setLookAt(newPos.x, newPos.y, newPos.z, center.x, center.y, center.z, true);       
   };
 
   if (!isOpen) return null;
@@ -219,7 +255,11 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
           <div className="overflow-y-auto max-h-60">
             <p>Results: {results.length} collisions found.</p>
             {results.map((collision, index) => (
-              <div key={index} className="p-2 border-b border-gray-700">
+              <div 
+                key={index} 
+                className="p-2 border-b border-gray-700 cursor-pointer hover:bg-gray-700"
+                onClick={() => handleCollisionClick(collision)}
+              >
                 <p>Collision {index + 1}:</p>
                 <p>Item 1: {collision.item1.itemId} (Model: {collision.item1.modelId})</p>
                 <p>Item 2: {collision.item2.itemId} (Model: {collision.item2.modelId})</p>

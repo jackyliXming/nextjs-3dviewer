@@ -29,7 +29,7 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
           ? "bg-gray-700 text-white"
           : "bg-gray-300 text-black"
         : darkMode
-        ? "bg-white text-gray-600 hover:bg-gray-200"
+        ? "bg-white text-gray-600 hover:bg-gray-300"
         : "bg-gray-700 text-gray-400 hover:bg-gray-200"
     }`;
 
