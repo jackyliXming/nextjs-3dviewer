@@ -961,6 +961,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           components={components}
           world={worldRef.current}
           darkMode={darkMode}
+          categories={categories}
         />
       )}
 
