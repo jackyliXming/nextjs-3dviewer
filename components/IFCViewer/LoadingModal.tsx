@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Spinner } from "@heroui/react";
 
 interface LoadingModalProps {
@@ -10,6 +11,13 @@ interface LoadingModalProps {
 }
 
 export default function LoadingModal({ darkMode, progress, show }: LoadingModalProps) {
+  const { t } = useTranslation();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   if (!show) return null;
 
   return (
@@ -39,7 +47,7 @@ export default function LoadingModal({ darkMode, progress, show }: LoadingModalP
         }}
       >
         <Spinner classNames={{ label: "text-foreground mt-4" }} variant="gradient" />
-        <p>Loading: {progress}%</p>
+        <p>{isClient ? t("loading", { progress }) : `Loading: ${progress}%`}</p>
         <div
           style={{
             width: "100%",

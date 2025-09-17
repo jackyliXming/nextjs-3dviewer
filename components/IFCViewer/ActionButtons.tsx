@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Eye, Focus, RefreshCcw, Ghost } from "lucide-react";
 
 interface ActionButtonsProps {
@@ -20,6 +21,13 @@ export default function ActionButtons({
   onGhost,
   isGhost,
 }: ActionButtonsProps) {
+  const { t } = useTranslation();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <div
       className={`absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4 px-4 py-2 rounded-xl shadow-lg
@@ -31,7 +39,7 @@ export default function ActionButtons({
           ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-600 hover:bg-blue-700"} text-white`}
       >
         <Eye size={18} />
-        Toggle Visibility
+        {isClient ? t("toggle_visibility") : "Toggle Visibility"}
       </button>
 
       <button
@@ -40,7 +48,7 @@ export default function ActionButtons({
           ${darkMode ? "bg-green-800 hover:bg-green-900" : "bg-green-600 hover:bg-green-700"} text-white`}
       >
         <Focus size={18} />
-        Isolate
+        {isClient ? t("isolate") : "Isolate"}
       </button>
 
       <button
@@ -49,7 +57,7 @@ export default function ActionButtons({
           ${darkMode ? "bg-yellow-700 hover:bg-yellow-800" : "bg-yellow-600 hover:bg-yellow-700"} text-white`}
       >
         <RefreshCcw size={18} />
-        Show All
+        {isClient ? t("show_all") : "Show All"}
       </button>
 
       <button
@@ -64,7 +72,7 @@ export default function ActionButtons({
               : "bg-purple-600 hover:bg-purple-700"} text-white`}
       >
         <Ghost size={18} />
-        {isGhost ? "Disable Ghost" : "Ghost Mode"}
+        {isClient ? (isGhost ? t("disable_ghost") : t("ghost_mode")) : "Ghost Mode"}
       </button>
     </div>
   );

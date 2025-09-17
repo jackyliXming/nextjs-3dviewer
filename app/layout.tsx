@@ -4,6 +4,7 @@ import { Link } from "@heroui/link";
 import clsx from "clsx";
 
 import { Providers } from "./providers";
+import I18nProvider from "./i18n-provider";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
@@ -41,10 +42,11 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
-          <div className="relative flex flex-col h-screen">
-              {children}
-            <footer className="w-full flex items-center justify-center py-3">
+        <I18nProvider>
+          <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
+            <div className="relative flex flex-col h-screen">
+                {children}
+              <footer className="w-full flex items-center justify-center py-3">
               <a
                         className="flex items-center gap-2 hover:underline hover:underline-offset-4"
                         href="https://gomore.com.tw/2015/index.html"
@@ -61,9 +63,10 @@ export default function RootLayout({
                       >
                         2015 © Gomore Building Envelope Technology Co. Ltd | TEL:02 2797-9977 FAX:02 2797 2588
                       </a>
-            </footer>
-          </div>
-        </Providers>
+              </footer>
+            </div>
+          </Providers>
+        </I18nProvider>
       </body>
     </html>
   );

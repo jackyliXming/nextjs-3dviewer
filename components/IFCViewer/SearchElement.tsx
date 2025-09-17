@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Plus, Trash2 } from "lucide-react";
 import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
@@ -20,12 +21,18 @@ type TQueryRow = {
 };
 
 export default function SearchElement({ components, darkMode, onClose }: Props) {
+  const { t } = useTranslation();
+  const [isClient, setIsClient] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [queryRows, setQueryRows] = useState<TQueryRow[]>([
     { id: 0, attribute: "Category", operator: "include", value: "", logic: "AND" },
   ]);
   const [isSearching, setIsSearching] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (notification) {
@@ -179,7 +186,7 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
         await hider.isolate(finalResult);
       } else {
         await hider.set(true);
-        setNotification("No elements found.");
+        setNotification(t("no_elements_found"));
       }
     } finally {
       setIsSearching(false);
@@ -201,7 +208,7 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
           </div>
         )}
         <div className="handle flex items-center justify-between mb-2 cursor-move">
-          <h3 className="text-2xl font-semibold">Search Elements</h3>
+          <h3 className="text-2xl font-semibold">{isClient ? t("search_elements") : "Search Elements"}</h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-gray-300" aria-label="Close search panel">
             <X size={18} />
           </button>
@@ -209,10 +216,10 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
 
         <div className="space-y-4">
           <div className="flex items-center space-x-2 text-sm font-medium text-gray-500">
-            <div className="w-1/6">Logic</div>
-            <div className="w-1/4">Attribute</div>
-            <div className="w-1/4">Operator</div>
-            <div className="w-1/3">Value</div>
+            <div className="w-1/6">{isClient ? t("logic") : "Logic"}</div>
+            <div className="w-1/4">{isClient ? t("attribute") : "Attribute"}</div>
+            <div className="w-1/4">{isClient ? t("operator") : "Operator"}</div>
+            <div className="w-1/3">{isClient ? t("value") : "Value"}</div>
           </div>
           {queryRows.map((row) => (
             <div key={row.id} className="flex items-center space-x-2">
@@ -235,10 +242,10 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
                 }
                 className={`p-2 border-t border-b ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-gray-200 text-gray-900 border-gray-300"}`}
               >
-                <option>Category</option>
-                <option>Name</option>
-                <option>ObjectType</option>
-                <option>Tag</option>
+                <option value="Category">{isClient ? t("category") : "Category"}</option>
+                <option value="Name">{isClient ? t("name") : "Name"}</option>
+                <option value="ObjectType">{isClient ? t("object_type") : "ObjectType"}</option>
+                <option value="Tag">{isClient ? t("tag") : "Tag"}</option>
               </select>
               <select
                 value={row.operator}
@@ -247,10 +254,10 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
                 }
                 className={`p-2 border-t border-b ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-gray-200 text-gray-900 border-gray-300"}`}
               >
-                <option>include</option>
-                <option>equal</option>
-                <option>startsWith</option>
-                <option>endsWith</option>
+                <option value="include">{isClient ? t("include") : "include"}</option>
+                <option value="equal">{isClient ? t("equal") : "equal"}</option>
+                <option value="startsWith">{isClient ? t("starts_with") : "startsWith"}</option>
+                <option value="endsWith">{isClient ? t("ends_with") : "endsWith"}</option>
               </select>
               {row.attribute === "Category" ? (
                 <select
@@ -258,7 +265,7 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
                   onChange={(e) => handleRowChange(row.id, { value: e.target.value })}
                   className={`w-full p-2 border-t border-b border-r rounded-r ${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-gray-100 text-gray-900 border-gray-300"}`}
                 >
-                  <option value="">Select category</option>
+                  <option value="">{isClient ? t("select_category") : "Select category"}</option>
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
@@ -270,7 +277,7 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
                   type="text"
                   value={row.value}
                   onChange={(e) => handleRowChange(row.id, { value: e.target.value })}
-                  placeholder={`Enter ${row.attribute}...`}
+                  placeholder={isClient ? t("enter_attribute", { attribute: row.attribute }) : `Enter ${row.attribute}...`}
                   className={`w-full p-2 border-t border-b border-r rounded-r ${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-gray-100 text-gray-900 border-gray-300"}`}
                 />
               )}
@@ -284,12 +291,12 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
         <div className="mt-4 flex justify-between items-center">
           <button onClick={handleAddRow} className={`p-2 rounded flex items-center ${darkMode ? "bg-green-800 hover:bg-green-900" : "bg-green-600 hover:bg-green-700"} text-white`}>
             <Plus size={18} className="mr-1" />
-            Add Condition
+            {isClient ? t("add_condition") : "Add Condition"}
           </button>
           <div className="flex items-center gap-2">
             {isSearching && <Spinner size="sm" />}
             <button onClick={handleSearch} disabled={isSearching} className={`p-2 rounded ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-600 hover:bg-blue-700"} text-white disabled:bg-gray-400`}>
-              {isSearching ? "Searching..." : "Search"}
+              {isSearching ? (isClient ? t("searching") : "Searching...") : (isClient ? t("search") : "Search")}
             </button>
           </div>
         </div>

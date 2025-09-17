@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HeaderToggle from "@/components/header";
 
@@ -40,6 +41,13 @@ export default function ModelManager({
   deleteAllModels,
   deleteSelectedModel,
 }: ModelManagerProps) {
+  const { t } = useTranslation();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <aside
       className={`transition-width duration-300 flex flex-col
@@ -61,21 +69,21 @@ export default function ModelManager({
             className={` w-5/6 flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
               ${darkMode ? "bg-blue-800 text-amber-100 hover:bg-blue-900" : "bg-blue-600 text-white hover:bg-blue-700"}`}
           >
-            Upload IFC File
+            {isClient ? t("upload_ifc") : "Upload IFC File"}
             <input type="file" accept=".ifc" onChange={IfcUpload} className="hidden" />
           </label>
           <label
             className={` w-5/6 flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
               ${darkMode ? "bg-green-800 text-amber-100 hover:bg-green-900" : "bg-green-600 text-white hover:bg-green-700"}`}
           >
-            Upload Fragment File
+            {isClient ? t("upload_fragment") : "Upload Fragment File"}
             <input type="file" accept=".frag" onChange={handleFragmentUpload} className="hidden" />
           </label>
           <label
             className={` w-5/6 flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
               ${darkMode ? "bg-yellow-700 text-amber-100 hover:bg-yellow-800" : "bg-yellow-600 text-white hover:bg-yellow-700"}`}
           >
-            Upload JSON File
+            {isClient ? t("upload_json") : "Upload JSON File"}
             <input type="file" accept=".json" onChange={handleJSONUpload} className="hidden" />
           </label>
           <button
@@ -83,7 +91,7 @@ export default function ModelManager({
               ${darkMode ? "bg-red-700 text-amber-100 hover:bg-red-800" : "bg-red-600 text-white hover:bg-red-700"}`}
             onClick={deleteAllModels}
           >
-            Delete All Models
+            {isClient ? t("delete_all_models") : "Delete All Models"}
           </button>
         </div>
       )}
@@ -91,7 +99,7 @@ export default function ModelManager({
       <br />
 
       {!sidebarCollapsed && (
-        <h2 className={`text-lg font-semibold mb-4 px-4 ${darkMode ? "text-amber-100" : "text-white"}`}>Uploaded Models</h2>
+        <h2 className={`text-lg font-semibold mb-4 px-4 ${darkMode ? "text-amber-100" : "text-white"}`}>{isClient ? t("uploaded_models") : "Uploaded Models"}</h2>
       )}
 
       <hr />
@@ -108,25 +116,25 @@ export default function ModelManager({
                     className={`${darkMode ? "bg-blue-800 text-amber-100 hover:bg-blue-900" : "bg-blue-600 text-white hover:bg-blue-700"} px-2 py-1 rounded text-xs`}
                     onClick={() => handleDownloadIFC(model)}
                   >
-                    IFC
+                    {isClient ? t("ifc") : "IFC"}
                   </button>
                   <button
                     className={`${darkMode ? "bg-green-800 text-amber-100 hover:bg-green-900" : "bg-green-600 text-white hover:bg-green-700"} px-2 py-1 rounded text-xs`}
                     onClick={() => downloadFragments()}
                   >
-                    Fragment
+                    {isClient ? t("fragment") : "Fragment"}
                   </button>
                   <button
                     className={`${darkMode ? "bg-yellow-700 text-amber-100 hover:bg-yellow-800" : "bg-yellow-600 text-white hover:bg-yellow-700"} px-2 py-1 rounded text-xs`}
                     onClick={() => handleDownloadJSON(model)}
                   >
-                    JSON
+                    {isClient ? t("json") : "JSON"}
                   </button>
                   <button
                     className={`${darkMode ? "bg-red-700 text-amber-100 hover:bg-red-800" : "bg-red-600 text-white hover:bg-red-700"} px-2 py-1 rounded text-xs`}
                     onClick={() => deleteSelectedModel(model)}
                   >
-                    Delete
+                    {isClient ? t("delete") : "Delete"}
                   </button>
                 </div>
                 <hr

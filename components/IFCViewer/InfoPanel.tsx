@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import * as OBC from "@thatopen/components";
 
@@ -23,8 +24,13 @@ export default function IFCInfoPanel({
   psets,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
+  const [isClient, setIsClient] = useState(false);
   const [searchText, setSearchText] = useState("");
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const filteredAttrs = attrs
     ? Object.fromEntries(
@@ -60,16 +66,16 @@ export default function IFCInfoPanel({
         ${darkMode ? "bg-gray-900 text-amber-100 border-gray-700" : "bg-white text-gray-900 border-gray-200"}`}
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-2xl font-semibold">Element Info</h3>
+        <h3 className="text-2xl font-semibold">{isClient ? t("element_info") : "Element Info"}</h3>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-300" aria-label="Close info panel">
           <X size={18} />
         </button>
       </div>
 
       <div className="text-l opacity-80 mb-3">
-        {modelId ? `Model: ${modelId}` : ""}
+        {modelId ? `${isClient ? t("model") : "Model: "}${modelId}` : ""}
         <br />
-        {localId !== null ? ` Local ID: ${localId}` : ""}
+        {localId !== null ? `${isClient ? t("local_id") : " Local ID: "}${localId}` : ""}
       </div>
 
 
@@ -78,15 +84,15 @@ export default function IFCInfoPanel({
         type="text"
         value={searchText}
         onChange={(e) => setSearchText(e.target.value)}
-        placeholder="Search attributes & property sets..."
+        placeholder={isClient ? t("search_attributes_property_sets") : "Search attributes & property sets..."}
         className={`mb-3 p-2 rounded w-full border ${darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-gray-100 text-gray-900 border-gray-300"}`}
       />
 
       {infoLoading ? (
-        <div className="text-sm opacity-70">Loading…</div>
+        <div className="text-sm opacity-70">{isClient ? t("loading", { progress: '' }) : "Loading…"}</div>
       ) : (
         <>
-          <h4 className="font-semibold mb-1">Attributes</h4>
+          <h4 className="font-semibold mb-1">{isClient ? t("attributes") : "Attributes"}</h4>
           {filteredAttrs && Object.keys(filteredAttrs).length > 0 ? (
             <div className={`text-xs ${darkMode ? "bg-gray-800" : "bg-gray-100"} rounded p-2 mb-4`}>
               <ul className="space-y-1">
@@ -100,10 +106,10 @@ export default function IFCInfoPanel({
               </ul>
             </div>
           ) : (
-            <div className="text-sm opacity-60 mb-4">No attributes found.</div>
+            <div className="text-sm opacity-60 mb-4">{isClient ? t("no_attributes_found") : "No attributes found."}</div>
           )}
 
-          <h4 className="font-semibold mb-1">Property Sets</h4>
+          <h4 className="font-semibold mb-1">{isClient ? t("property_sets") : "Property Sets"}</h4>
           {filteredPsets && Object.keys(filteredPsets).length > 0 ? (
             <div className="space-y-3">
               {Object.entries(filteredPsets).map(([pset, props]) => (
@@ -121,7 +127,7 @@ export default function IFCInfoPanel({
               ))}
             </div>
           ) : (
-            <div className="text-sm opacity-60">No property sets found.</div>
+            <div className="text-sm opacity-60">{isClient ? t("no_property_sets_found") : "No property sets found."}</div>
           )}
         </>
       )}

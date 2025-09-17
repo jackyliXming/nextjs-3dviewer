@@ -1,7 +1,8 @@
 // Viewpoints.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import * as OBC from "@thatopen/components";
 
 interface StoredViewpoint {
@@ -30,7 +31,13 @@ export default function Viewpoints({
   storedViews,
   setStoredViews,
 }: ViewpointsProps) {
+  const { t } = useTranslation();
+  const [isClient, setIsClient] = useState(false);
   const [currentView, setCurrentView] = useState<StoredViewpoint | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleAddViewpoint = async () => {
     const vp = await createViewpoint();
@@ -81,13 +88,13 @@ export default function Viewpoints({
 
   return (
     <div className={`p-4 ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-black"} w-70`}>
-      <h2 className="text-lg font-bold mb-2">Viewpoints</h2>
+      <h2 className="text-lg font-bold mb-2">{isClient ? t("viewpoints") : "Viewpoints"}</h2>
 
       <button
         className="w-full py-2 mb-2 bg-blue-600 text-white rounded"
         onClick={handleAddViewpoint}
       >
-        Create Viewpoint
+        {isClient ? t("create_viewpoint") : "Create Viewpoint"}
       </button>
 
       {currentView && (
@@ -99,18 +106,18 @@ export default function Viewpoints({
               await refreshSnapshot(currentView);
             }}
           >
-            Update Camera & Snapshot
+            {isClient ? t("update_camera_snapshot") : "Update Camera & Snapshot"}
           </button>
           <button
             className="py-1 bg-purple-600 text-white rounded"
             onClick={() => setWorldCamera(currentView.viewpoint)}
           >
-            Set World Camera
+            {isClient ? t("set_world_camera") : "Set World Camera"}
           </button>
         </div>
       )}
 
-      <h3 className="font-semibold mt-4 mb-2">Stored Viewpoints</h3>
+      <h3 className="font-semibold mt-4 mb-2">{isClient ? t("stored_viewpoints") : "Stored Viewpoints"}</h3>
       <div className="flex flex-col gap-2 max-h-150 overflow-y-auto">
         {storedViews.map(view => (
           <div

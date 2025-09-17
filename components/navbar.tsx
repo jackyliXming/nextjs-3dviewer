@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
 import {
   Navbar as HeroUINavbar,
   NavbarContent,
@@ -32,6 +34,18 @@ interface NavbarProps {
 }
 
 export const Navbar = ({ darkMode, toggleTheme }: NavbarProps) => {
+  const { t, i18n } = useTranslation();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "en" ? "zh" : "en";
+    i18n.changeLanguage(newLang);
+  };
+
   const searchInput = (
     <Input
       aria-label="Search"
@@ -45,7 +59,7 @@ export const Navbar = ({ darkMode, toggleTheme }: NavbarProps) => {
         </Kbd>
       }
       labelPlacement="outside"
-      placeholder="Search..."
+      placeholder={isClient ? t("search") : "search"}
       startContent={
         <SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />
       }
@@ -85,7 +99,10 @@ export const Navbar = ({ darkMode, toggleTheme }: NavbarProps) => {
         </NavbarContent>
 
         <NavbarContent className="hidden sm:flex basis-1/3 sm:basis-full" justify="end">
-          <NavbarItem className="gap-2">
+          <NavbarItem className="lg:flex gap-2">
+            <Button onPress={toggleLanguage}>
+              {isClient ? i18n.language.toUpperCase() : ""}
+            </Button>
             <ThemeSwitch darkMode={darkMode} toggleTheme={toggleTheme} />
           </NavbarItem>
         </NavbarContent>
