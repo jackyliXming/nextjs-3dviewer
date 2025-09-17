@@ -16,6 +16,7 @@ import Viewpoints from "@/components/IFCViewer/Viewpoints";
 import ViewOrientation from "@/components/IFCViewer/ViewOrientation";
 import BCFTopics from "@/components/IFCViewer/BCFTopics";
 import CollisionDetector from "@/components/IFCViewer/CollisionDetector";
+import SearchElement from "@/components/IFCViewer/SearchElement";
 
 interface UploadedModel {
   id: string;
@@ -61,9 +62,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [projection, setProjection] = useState<"Perspective" | "Orthographic">("Perspective");
   const [navigation, setNavigation] = useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
   const [isGhost, setIsGhost] = useState(false);  
-  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | "colorize" | "collision" | null>(null);  
+  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | "colorize" | "collision" | "search" | null>(null);  
   const [lengthMode, setLengthMode] = useState<"free" | "edge">("free");
   const [areaMode, setAreaMode] = useState<"free" | "square">("free");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentViewpoint, setCurrentViewpoint] = useState<OBC.Viewpoint | null>(null);
   const [storedViews, setStoredViews] = useState<StoredViewpoint[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -326,6 +328,9 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       case "collision":
         setIsCollisionModalOpen(true);
         if (highlighter) highlighter.enabled = true;
+        break;
+      case "search":
+        setIsSearchOpen(true);
         break;
       default:
         if (highlighter) highlighter.enabled = true;
@@ -941,6 +946,11 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           else if (tool === "collision") {
             setActiveTool(tool);
             setIsCollisionModalOpen(true);
+          } else if (tool === "search") {
+            setActiveTool(tool);
+          } else {
+            setActiveTool(null);
+            setIsSearchOpen(false);
           }
         }}
         lengthMode={lengthMode}
@@ -1011,8 +1021,9 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       )}
 
       {/* Info Panel */}
-      {infoOpen && (
+      {infoOpen && components && (
         <IFCInfoPanel
+          components={components}
           darkMode={darkMode}
           infoLoading={infoLoading}
           modelId={selectedModelId}
@@ -1020,9 +1031,17 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           attrs={selectedAttrs}
           psets={selectedPsets}
           onClose={() => setInfoOpen(false)}
-          categories={categories}
-          selectedCategory={selectedCategory ?? undefined}
-          isolateCategory={onCategorySelect}
+        />
+      )}
+
+      {isSearchOpen && components && (
+        <SearchElement
+          components={components}
+          darkMode={darkMode}
+          onClose={() => {
+            setIsSearchOpen(false);
+            setActiveTool(null);
+          }}
         />
       )}
 
