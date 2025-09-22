@@ -16,7 +16,7 @@ interface ToolBarProps {
   onClearColor?: () => void;
 }
 
-export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode, setLengthMode, areaMode, setAreaMode, onColorize, onClearColor, }: ToolBarProps) {
+export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode, setLengthMode, areaMode, setAreaMode, onColorize, onClearColor }: ToolBarProps) {
   const { t } = useTranslation();
   const [isClient, setIsClient] = useState(false);
   const [pickedColor, setPickedColor] = useState<string>("#ff6600");

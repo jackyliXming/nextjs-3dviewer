@@ -11,7 +11,10 @@ interface BCFTopicsProps {
   components: OBC.Components;
   world: OBC.World;
   darkMode: boolean;
-  onTopicClick?: (topic: OBC.Topic) => void;
+  bcfMode: boolean;
+  setBcfMode: (enabled: boolean) => void;
+  selectedModelId: string | null;
+  selectedLocalId: number | null;
 }
 
 interface CreateTopicFormData {
@@ -36,7 +39,7 @@ interface ExtendedTopic extends OBC.Topic {
   history?: HistoryRecord[];
 }
 
-const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTopicClick }) => {
+const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfMode, setBcfMode, selectedModelId, selectedLocalId }) => {
   const { t } = useTranslation();
   const [isClient, setIsClient] = useState(false);
   const [bcfTopics, setBcfTopics] = useState<OBC.BCFTopics | null>(null);
@@ -79,34 +82,148 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
     };
   }, [components]);
 
-  const createTopic = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-
+  const handleEnterBcfMode = async () => {
     const highlighter = components.get(OBCF.Highlighter);
-    
-    const currentSelection = structuredClone(highlighter.selection.select);
+    await highlighter.clear();
+    setBcfMode(true);
+  };
+
+  const handleConfirmBcfCreation = async () => {
+    const highlighter = components.get(OBCF.Highlighter);
+    const fragments = components.get(OBC.FragmentsManager);
+    const currentSelection = highlighter.selection.select;
 
     if (Object.keys(currentSelection).length === 0) {
       alert(t("select_element_before_creating_topic"));
+      setBcfMode(false);
       return;
     }
 
-    const fragments = components.get(OBC.FragmentsManager);
-    const guids = await fragments.modelIdMapToGuids(currentSelection);
+    const modelId = Object.keys(currentSelection)[0];
+    const expressId = [...currentSelection[modelId]][0];
+    
+    const model = fragments.list.get(modelId);
+    if (!model) return;
 
-    const guidsSet = new Set([...guids]);
+    const [attrs] = await model.getItemsData([expressId], { attributesDefault: true });
+    if (!attrs) return;
 
-    console.log(" CreateTopic - Stored GUIDs:", [...guidsSet]);
+    const query = {
+      categories: [] as string[],
+      attributes: [] as { name: string; value: string }[]
+    };
 
-    await highlighter.clear("select");
-    setSelectionForTopic(guidsSet)
+    const escapeRegExp = (string: any) => {
+      return String(string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    if (attrs._category && (attrs._category as any).value) {
+      const categoryValue = (attrs._category as any).value as string;
+      query.categories.push(`^${escapeRegExp(categoryValue)}$`);
+    }
+
+    const reliableKeys = ["Name", "ObjectType", "Tag"];
+    for (const key of reliableKeys) {
+      if (attrs[key] && (attrs[key] as any).value) {
+        const value = (attrs[key] as any).value as string;
+        query.attributes.push({ name: `^${key}$`, value: `^${escapeRegExp(value)}$` });
+      }
+    }
+
+    if (query.categories.length === 0 && query.attributes.length === 0) {
+      console.error("No reliable attributes found for the selected element.");
+      return;
+    }
+
+    const selectionString = JSON.stringify(query);
+    setSelectionForTopic(new Set([selectionString]));
     setCreateModalOpen(true);
+    setBcfMode(false);
+    await highlighter.clear();
+  };
+
+  const handleCancelBcfCreation = async () => {
+    const highlighter = components.get(OBCF.Highlighter);
+    await highlighter.clear();
+    setBcfMode(false);
+  };
+
+  const handleTopicClick = async (topic: OBC.Topic) => {
+    setSelectedTopic(topic);
+
+    if (!components || !topic.viewpoints.size) return;
+
+    const viewpoints = components.get(OBC.Viewpoints);
+    const highlighter = components.get(OBCF.Highlighter);
+    const finder = components.get(OBC.ItemsFinder);
+    const hider = components.get(OBC.Hider);
+
+    if (!viewpoints || !highlighter || !finder || !hider) return;
+
+    const firstViewpointGuid = topic.viewpoints.values().next().value;
+
+    if (firstViewpointGuid) {
+      const viewpoint = viewpoints.list.get(firstViewpointGuid);
+      if (viewpoint) {
+        await viewpoint.go();
+        await highlighter.clear();
+
+        if (viewpoint.selectionComponents.size > 0) {
+          const selectionString = viewpoint.selectionComponents.values().next().value;
+          if (selectionString) {
+            const preQuery = JSON.parse(selectionString);
+            const queryName = `query-${topic.guid}`;
+
+            const finalQuery: any = {
+              attributes: {
+                queries: [],
+                conjunction: "AND",
+              },
+            };
+
+            if (preQuery.categories && preQuery.categories.length > 0) {
+              finalQuery.categories = preQuery.categories.map((cat: string) => new RegExp(cat, "i"));
+            }
+
+            if (preQuery.attributes && preQuery.attributes.length > 0) {
+              finalQuery.attributes.queries = preQuery.attributes.map((attr: { name: string; value: string }) => {
+                return { name: new RegExp(attr.name, "i"), value: new RegExp(attr.value, "i") };
+              });
+            }
+
+            if ((!finalQuery.categories || finalQuery.categories.length === 0) && finalQuery.attributes.queries.length === 0) {
+              console.warn("Query is empty, cannot search.");
+              return;
+            }
+
+            if (finder.list.has(queryName)) {
+              finder.list.delete(queryName);
+            }
+            finder.create(queryName, [finalQuery]);
+            const query = finder.list.get(queryName);
+            if (!query) {
+              console.error("Failed to create query.");
+              return;
+            }
+
+            const finalResult = await query.test();
+            finder.list.delete(queryName);
+
+            if (finalResult && Object.keys(finalResult).length > 0) {
+              highlighter.selection.select = finalResult;
+              await hider.isolate(finalResult);
+            } else {
+              console.warn("Query returned no results.");
+              await hider.set(true);
+            }
+          }
+        }
+      }
+    }
   };
 
   const handleCreateTopic = async (formData: any) => {
     if (!bcfTopics || !selectionForTopic) return;
-
-    console.log(" HandleCreateTopic - Using GUIDs:", [...selectionForTopic]);
 
     const topic = bcfTopics.create({
       title: formData.title,
@@ -125,7 +242,6 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
       vp.world = world;
       await vp.updateCamera();
       vp.selectionComponents.add(...selectionForTopic);
-      console.log(" HandleCreateTopic - Saved to Viewpoint:", [...vp.selectionComponents]);
       topic.viewpoints.add(vp.guid);
     }
 
@@ -267,16 +383,6 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
     document.removeEventListener("mouseup", onMouseUp);
   };
 
-  const handleMouseEnter = () => {
-    const highlighter = components.get(OBCF.Highlighter);
-    highlighter.enabled = false;
-  };
-
-  const handleMouseLeave = () => {
-    const highlighter = components.get(OBCF.Highlighter);
-    highlighter.enabled = true;
-  };
-
   return (
     <div
       ref={panelRef}
@@ -285,8 +391,6 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
       }`}
       style={{ bottom: "1rem", right: "1rem" }}
       onPointerDown={(e) => e.stopPropagation()}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <div
         className={`${darkMode ? "bg-blue-900" : "bg-blue-800"} text-amber-100 px-2 py-1 flex justify-between items-center font-bold cursor-grab select-none`}
@@ -299,12 +403,29 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
       {!collapsed && (
         <div className="p-2 flex flex-col gap-2">
           <div className="flex gap-2">
-            <button
-              className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-2 py-1 rounded`}
-              onClick={(e) => createTopic(e)}
-            >
-              {isClient ? t("create") : "Create"}
-            </button>
+            {!bcfMode ? (
+              <button
+                className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-2 py-1 rounded`}
+                onClick={handleEnterBcfMode}
+              >
+                {isClient ? t("create") : "Create"}
+              </button>
+            ) : (
+              <>
+                <button
+                  className={`${darkMode ? "bg-green-700 hover:bg-green-800" : "bg-green-800 hover:bg-green-900"} text-amber-100 px-2 py-1 rounded`}
+                  onClick={handleConfirmBcfCreation}
+                >
+                  {isClient ? t("confirm_selection") : "Confirm"}
+                </button>
+                <button
+                  className={`${darkMode ? "bg-red-700 hover:bg-red-800" : "bg-red-800 hover:bg-red-900"} text-amber-100 px-2 py-1 rounded`}
+                  onClick={handleCancelBcfCreation}
+                >
+                  {isClient ? t("cancel") : "Cancel"}
+                </button>
+              </>
+            )}
             <button
               className={`${darkMode ? "bg-green-700 hover:bg-green-800" : "bg-green-800 hover:bg-green-900"} text-amber-100 px-2 py-1 rounded ${!selectedTopic ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={downloadBCF}
@@ -331,12 +452,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, onTo
                     key={topic.guid}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedTopic(topic);
-                      if (onTopicClick) {
-                        const highlighter = components.get(OBCF.Highlighter);
-                        highlighter.enabled = true;
-                        onTopicClick(topic);
-                      }
+                      handleTopicClick(topic);
                     }}
                     className={`cursor-pointer p-1 flex justify-between items-center ${
                       selectedTopic?.guid === topic.guid ? (darkMode ? "bg-gray-600" : "bg-gray-200") : ""

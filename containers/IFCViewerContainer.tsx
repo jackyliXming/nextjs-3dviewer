@@ -61,7 +61,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [selectedPsets, setSelectedPsets] = useState<PsetDict | null>(null);
   const [projection, setProjection] = useState<"Perspective" | "Orthographic">("Perspective");
   const [navigation, setNavigation] = useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
-  const [isGhost, setIsGhost] = useState(false);  
+  const [isGhost, setIsGhost] = useState(false);
+  const [bcfMode, setBcfMode] = useState(false);
   const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | "colorize" | "collision" | "search" | null>(null);  
   const [lengthMode, setLengthMode] = useState<"free" | "edge">("free");
   const [areaMode, setAreaMode] = useState<"free" | "square">("free");
@@ -148,6 +149,38 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       highlighter.setup({ world });
       highlighter.zoomToSelection = true;
 
+      highlighter.events.select.onHighlight.add(async (selection) => {
+        const fragmentId = Object.keys(selection)[0];
+        if (!fragmentId) {
+            setInfoOpen(false);
+            setSelectedModelId(null);
+            setSelectedLocalId(null);
+            setSelectedAttrs(null);
+            setSelectedPsets(null);
+            return;
+        }
+        const expressId = [...selection[fragmentId]][0];
+        const model = fragmentsRef.current?.list.get(fragmentId);
+        if (!model) return;
+
+        try {
+            setInfoLoading(true);
+            setInfoOpen(true);
+            setSelectedModelId(fragmentId);
+            setSelectedLocalId(expressId);
+
+            const [attrs] = await model.getItemsData([expressId], {
+                attributesDefault: true,
+            });
+            setSelectedAttrs(attrs ?? null);
+
+            const psetsRaw = await getItemPsets(model, expressId);
+            setSelectedPsets(formatItemPsets(psetsRaw));
+        } finally {
+            setInfoLoading(false);
+        }
+      });
+
       if (!highlighter.styles.has("colorize")) {
         highlighter.styles.set("colorize", {
           color: new Color(selectedColorRef.current),
@@ -161,66 +194,6 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
       setComponents(components);
 
-      const handleClick = async (event: MouseEvent) => {
-        if (!fragmentsRef.current || !worldRef.current?.renderer) return;
-
-        const dom = worldRef.current.renderer.three.domElement as HTMLCanvasElement;
-        const mouse = new Vector2(event.clientX, event.clientY);
-
-        let hit: { modelId: string; localId: number } | null = null;
-        for (const [id, model] of fragmentsRef.current.list) {
-          const result = await model.raycast({
-            camera: worldRef.current.camera.three,
-            mouse,
-            dom,
-          });
-          if (result) {
-            hit = { modelId: id, localId: result.localId };
-            break;
-          }
-        }
-
-        if (!hit) {
-          if (activeTool === "colorize") return;
-          setInfoOpen(false);
-          setSelectedModelId(null);
-          setSelectedLocalId(null);
-          setSelectedAttrs(null);
-          setSelectedPsets(null);
-          fragmentsRef.current.core.update(true);
-          return;
-        }
-
-        if (colorizeRef.current.enabled && hit) {
-          await handleClickColorizeElement(hit.modelId, hit.localId);
-          return;
-        }
-
-        const model = fragmentsRef.current.list.get(hit.modelId);
-        if (!model) return;
-
-        try {
-          setInfoLoading(true);
-          setInfoOpen(true);
-          setSelectedModelId(hit.modelId);
-          setSelectedLocalId(hit.localId);
-
-          const [attrs] = await model.getItemsData([hit.localId], {
-            attributesDefault: true,
-          });
-          setSelectedAttrs(attrs ?? null);
-
-          const psetsRaw = await getItemPsets(model, hit.localId);
-          setSelectedPsets(formatItemPsets(psetsRaw));
-
-          fragmentsRef.current.core.update(true);
-        } finally {
-          setInfoLoading(false);
-        }
-      };
-
-      viewerRef.current!.addEventListener("click", handleClick);
-
       const handleResize = () => {
         renderer.resize();
         camera.updateAspect();
@@ -228,7 +201,6 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       window.addEventListener("resize", handleResize);
 
       return () => {
-        viewerRef.current?.removeEventListener("click", handleClick);
         window.removeEventListener("resize", handleResize);
         components.dispose();
       };
@@ -353,6 +325,14 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
   useEffect(() => {
     selectedColorRef.current = selectedColor;
+    // Also update the highlighter style when the color changes
+    if (componentsRef.current) {
+      const highlighter = componentsRef.current.get(OBCF.Highlighter);
+      if (highlighter.styles.has("colorize")) {
+        const style = highlighter.styles.get("colorize") as any; // Use 'any' to bypass the incorrect type
+        style.color.set(selectedColor);
+      }
+    }
   }, [selectedColor]);
 
   const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -820,29 +800,16 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   };
 
   const handleClickColorizeElement = async (modelId: string, localId: number) => {
-    if (!fragmentsRef.current || !colorizeRef.current.enabled) return;
+    if (!componentsRef.current || !colorizeRef.current.enabled) return;
 
-    if (!coloredElements.current[modelId]) coloredElements.current[modelId] = new Set();
-
-    if (coloredElements.current[modelId].has(localId)) return;
-
-    coloredElements.current[modelId].add(localId);
+    const highlighter = componentsRef.current.get(OBCF.Highlighter);
 
     const modelIdMap: Record<string, Set<number>> = {
-      [modelId]: new Set([localId])
+      [modelId]: new Set([localId]),
     };
 
-    await fragmentsRef.current.highlight(
-      {
-        color: new Color(selectedColorRef.current),
-        renderedFaces: FRAGS.RenderedFaces.ONE,
-        opacity: 1,
-        transparent: false,
-      },
-      modelIdMap
-    );
-
-    await fragmentsRef.current.core.update(true);
+    // Use the standard highlighter component instead of the low-level one
+    await highlighter.highlightByID("colorize", modelIdMap, true);
   };
 
   const handleColorizeToggle = () => {
@@ -863,17 +830,8 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
   const handleClearColor = async () => {
     if (!componentsRef.current) return;
-
     const highlighter = componentsRef.current.get(OBCF.Highlighter);
-    if (!highlighter) return;
-
-    const styleName = "colorize";
-
-    if (highlighter.styles.has(styleName)) {
-      await highlighter.clear(styleName);
-    }
-
-    coloredElements.current = {};
+    await highlighter.clear("colorize");
   };
 
   const goToTopicViewpoint = async (topic: OBC.Topic) => {
@@ -896,11 +854,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
         if (viewpoint.selectionComponents.size > 0) {
           const guidArray = Array.from(viewpoint.selectionComponents);
-          console.log("GoToTopic - Loaded GUIDs from Viewpoint:", guidArray );
-
           const selection = await fragments.guidsToModelIdMap(guidArray);
-          console.log("GoToTopic - Converted ModelIdMap:", selection);
-
           highlighter.selection.select = selection;
           await highlighter.highlight("select");
         }
@@ -1016,7 +970,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
           components={components} 
           world={worldRef.current} 
           darkMode={darkMode} 
-          onTopicClick={goToTopicViewpoint}
+          bcfMode={bcfMode}
+          setBcfMode={setBcfMode}
+          selectedModelId={selectedModelId}
+          selectedLocalId={selectedLocalId}
         />
       )}
 
