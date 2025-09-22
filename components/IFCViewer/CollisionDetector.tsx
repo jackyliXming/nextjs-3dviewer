@@ -6,6 +6,7 @@ import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import * as THREE from "three";
 import * as FRAGS from "@thatopen/fragments";
+import { MeshBVH, MeshBVHHelper } from "three-mesh-bvh";
 
 interface CollisionDetectorProps {
   isOpen: boolean;
@@ -36,7 +37,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
   const boxerRef = useRef<OBC.BoundingBoxer | null>(null);
   const selectARef = useRef<HTMLSelectElement>(null);
   const selectBRef = useRef<HTMLSelectElement>(null);
-  const boundingBoxHelpers = useRef<THREE.Box3Helper[]>([]);
+  const boundingBoxHelpers = useRef<(THREE.Box3Helper | THREE.Mesh)[]>([]);
 
   useEffect(() => {
     setIsClient(true);
@@ -51,7 +52,16 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
   const cleanupHelpers = () => {
     for (const helper of boundingBoxHelpers.current) {
       world.scene.three.remove(helper);
-      helper.dispose();
+      if (helper instanceof THREE.Mesh) {
+        helper.geometry.dispose();
+        if (Array.isArray(helper.material)) {
+          helper.material.forEach(m => m.dispose());
+        } else {
+          helper.material.dispose();
+        }
+      } else {
+        helper.dispose();
+      }
     }
     boundingBoxHelpers.current = [];
   };
@@ -239,7 +249,35 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
           const item1 = itemsA[i];
           const item2 = itemsA[j];
           if (item1.box.intersectsBox(item2.box)) {
-            collisions.push({ item1, item2 });
+            const model1 = components.get(OBC.FragmentsManager).list.get(item1.modelId);
+            const model2 = components.get(OBC.FragmentsManager).list.get(item2.modelId);
+            if (!model1 || !model2) continue;
+
+            const [geometry1] = await model1.getItemsGeometry([parseInt(item1.itemId, 10)]);
+            const [geometry2] = await model2.getItemsGeometry([parseInt(item2.itemId, 10)]);
+
+            for (const data1 of geometry1) {
+              if (!data1.positions || !data1.indices) continue;
+              const geom1 = new THREE.BufferGeometry();
+              geom1.setAttribute("position", new THREE.BufferAttribute(data1.positions, 3));
+              geom1.setIndex(Array.from(data1.indices));
+              geom1.applyMatrix4(data1.transform);
+              const bvh1 = new MeshBVH(geom1);
+
+              for (const data2 of geometry2) {
+                if (!data2.positions || !data2.indices) continue;
+                const geom2 = new THREE.BufferGeometry();
+                geom2.setAttribute("position", new THREE.BufferAttribute(data2.positions, 3));
+                geom2.setIndex(Array.from(data2.indices));
+                geom2.applyMatrix4(data2.transform);
+
+                if (bvh1.intersectsGeometry(geom2, new THREE.Matrix4())) {
+                  collisions.push({ item1, item2 });
+                  break;
+                }
+              }
+              if (collisions[collisions.length - 1]?.item1 === item1) break;
+            }
           }
           comparisons++;
           if (comparisons % 10000 === 0 || comparisons === totalComparisons) {
@@ -261,13 +299,40 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
           }
 
           if (item1.box.intersectsBox(item2.box)) {
-            const key1 = `${item1.modelId}-${item1.itemId}`;
-            const key2 = `${item2.modelId}-${item2.itemId}`;
-            const pairKey = [key1, key2].sort().join('|');
-            
-            if (!foundPairs.has(pairKey)) {
-              collisions.push({ item1, item2 });
-              foundPairs.add(pairKey);
+            const model1 = components.get(OBC.FragmentsManager).list.get(item1.modelId);
+            const model2 = components.get(OBC.FragmentsManager).list.get(item2.modelId);
+            if (!model1 || !model2) continue;
+
+            const [geometry1] = await model1.getItemsGeometry([parseInt(item1.itemId, 10)]);
+            const [geometry2] = await model2.getItemsGeometry([parseInt(item2.itemId, 10)]);
+
+            for (const data1 of geometry1) {
+              if (!data1.positions || !data1.indices) continue;
+              const geom1 = new THREE.BufferGeometry();
+              geom1.setAttribute("position", new THREE.BufferAttribute(data1.positions, 3));
+              geom1.setIndex(Array.from(data1.indices));
+              geom1.applyMatrix4(data1.transform);
+              const bvh1 = new MeshBVH(geom1);
+
+              for (const data2 of geometry2) {
+                if (!data2.positions || !data2.indices) continue;
+                const geom2 = new THREE.BufferGeometry();
+                geom2.setAttribute("position", new THREE.BufferAttribute(data2.positions, 3));
+                geom2.setIndex(Array.from(data2.indices));
+                geom2.applyMatrix4(data2.transform);
+
+                if (bvh1.intersectsGeometry(geom2, new THREE.Matrix4())) {
+                  const key1 = `${item1.modelId}-${item1.itemId}`;
+                  const key2 = `${item2.modelId}-${item2.itemId}`;
+                  const pairKey = [key1, key2].sort().join('|');
+                  if (!foundPairs.has(pairKey)) {
+                    collisions.push({ item1, item2 });
+                    foundPairs.add(pairKey);
+                  }
+                  break;
+                }
+              }
+              if (collisions[collisions.length - 1]?.item1 === item1) break;
             }
           }
           comparisons++;
@@ -338,10 +403,35 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
 
     handleClose();
 
-    const helper1 = new THREE.Box3Helper(item1.box, new THREE.Color("red"));
-    const helper2 = new THREE.Box3Helper(item2.box, new THREE.Color("orange"));
-    world.scene.three.add(helper1, helper2);
-    boundingBoxHelpers.current.push(helper1, helper2);
+    const createMeshFromData = (data: FRAGS.MeshData, color: THREE.Color) => {
+      const { positions, indices, normals, transform } = data;
+      if (!(positions && indices && normals)) return null;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+      geometry.setIndex(Array.from(indices));
+
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color, transparent: true, opacity: 0.8 }));
+      mesh.applyMatrix4(transform);
+      return mesh;
+    };
+
+    const model1 = fragments.list.get(item1.modelId);
+    const model2 = fragments.list.get(item2.modelId);
+
+    if (model1) {
+      const [geometry1] = await model1.getItemsGeometry([parseInt(item1.itemId, 10)]);
+      const meshes1 = geometry1.map(data => createMeshFromData(data, new THREE.Color("red"))).filter(mesh => mesh !== null) as THREE.Mesh[];
+      meshes1.forEach(mesh => world.scene.three.add(mesh));
+      boundingBoxHelpers.current.push(...meshes1);
+    }
+
+    if (model2) {
+      const [geometry2] = await model2.getItemsGeometry([parseInt(item2.itemId, 10)]);
+      const meshes2 = geometry2.map(data => createMeshFromData(data, new THREE.Color("orange"))).filter(mesh => mesh !== null) as THREE.Mesh[];
+      meshes2.forEach(mesh => world.scene.three.add(mesh));
+      boundingBoxHelpers.current.push(...meshes2);
+    }
 
     await fragments.core.update(true);
 

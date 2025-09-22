@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import * as FRAGS from "@thatopen/fragments";
-import { PerspectiveCamera, OrthographicCamera, Vector2, Object3D, Mesh, Color, Vector3 } from "three";
+import { PerspectiveCamera, OrthographicCamera, Vector2, Object3D, Mesh, Color, Vector3, BufferGeometry, BufferAttribute, MeshLambertMaterial } from "three";
 import IFCViewerUI from "@/components/IFCViewer/ViewerUI";
 import IFCInfoPanel from "@/components/IFCViewer/InfoPanel";
 import ModelManager from "@/components/IFCViewer/ModelManager";
@@ -176,6 +176,28 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
             const psetsRaw = await getItemPsets(model, expressId);
             setSelectedPsets(formatItemPsets(psetsRaw));
+
+            console.log("Highlighted Element Attributes:", attrs);
+            console.log("Highlighted Element Psets:", psetsRaw);
+
+            const [geometryCollection] = await model.getItemsGeometry([expressId]);
+            console.log("Highlighted Element Geometry Collection:", geometryCollection);
+
+            const createMeshFromData = (data: FRAGS.MeshData) => {
+              const { positions, indices, normals, transform } = data;
+              if (!(positions && indices && normals)) return null;
+              const geometry = new BufferGeometry();
+              geometry.setAttribute("position", new BufferAttribute(positions, 3));
+              geometry.setAttribute("normal", new BufferAttribute(normals, 3));
+              geometry.setIndex(Array.from(indices));
+
+              const mesh = new Mesh(geometry, new MeshLambertMaterial({ color: "purple" }));
+              mesh.applyMatrix4(transform);
+              return mesh;
+            };
+
+            const meshes = geometryCollection.map(createMeshFromData).filter(mesh => mesh !== null);
+            console.log("Created Meshes from Geometry:", meshes);
         } finally {
             setInfoLoading(false);
         }
