@@ -210,8 +210,8 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
             finder.list.delete(queryName);
 
             if (finalResult && Object.keys(finalResult).length > 0) {
-              highlighter.selection.select = finalResult;
-              await hider.isolate(finalResult);
+              await highlighter.highlightByID("select", finalResult);
+              // await hider.isolate(finalResult);
             } else {
               console.warn("Query returned no results.");
               await hider.set(true);
