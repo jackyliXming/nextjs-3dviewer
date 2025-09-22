@@ -196,8 +196,10 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
               return mesh;
             };
 
-            const meshes = geometryCollection.map(createMeshFromData).filter(mesh => mesh !== null);
-            console.log("Created Meshes from Geometry:", meshes);
+            if (geometryCollection) {
+              const meshes = geometryCollection.map(createMeshFromData).filter(mesh => mesh !== null);
+              console.log("Created Meshes from Geometry:", meshes);
+            }
         } finally {
             setInfoLoading(false);
         }

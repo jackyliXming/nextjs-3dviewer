@@ -84,6 +84,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
 
   const handleEnterBcfMode = async () => {
     const highlighter = components.get(OBCF.Highlighter);
+    highlighter.multiple = "shiftKey";
     await highlighter.clear();
     setBcfMode(true);
   };
@@ -99,51 +100,59 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
       return;
     }
 
-    const modelId = Object.keys(currentSelection)[0];
-    const expressId = [...currentSelection[modelId]][0];
-    
-    const model = fragments.list.get(modelId);
-    if (!model) return;
+    const queries = [];
+    const escapeRegExp = (string: any) => String(string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    const [attrs] = await model.getItemsData([expressId], { attributesDefault: true });
-    if (!attrs) return;
+    for (const modelId in currentSelection) {
+      const model = fragments.list.get(modelId);
+      if (!model) continue;
 
-    const query = {
-      categories: [] as string[],
-      attributes: [] as { name: string; value: string }[]
-    };
+      const expressIds = Array.from(currentSelection[modelId]);
+      const itemsData = await model.getItemsData(expressIds, { attributesDefault: true });
 
-    const escapeRegExp = (string: any) => {
-      return String(string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
+      for (const attrs of itemsData) {
+        if (!attrs) continue;
 
-    if (attrs._category && (attrs._category as any).value) {
-      const categoryValue = (attrs._category as any).value as string;
-      query.categories.push(`^${escapeRegExp(categoryValue)}$`);
-    }
+        const query = {
+          categories: [] as string[],
+          attributes: [] as { name: string; value: string }[]
+        };
 
-    const reliableKeys = ["Name", "ObjectType", "Tag"];
-    for (const key of reliableKeys) {
-      if (attrs[key] && (attrs[key] as any).value) {
-        const value = (attrs[key] as any).value as string;
-        query.attributes.push({ name: `^${key}$`, value: `^${escapeRegExp(value)}$` });
+        if (attrs._category && (attrs._category as any).value) {
+          const categoryValue = (attrs._category as any).value as string;
+          query.categories.push(`^${escapeRegExp(categoryValue)}$`);
+        }
+
+        const reliableKeys = ["Name", "ObjectType", "Tag"];
+        for (const key of reliableKeys) {
+          if (attrs[key] && (attrs[key] as any).value) {
+            const value = (attrs[key] as any).value as string;
+            query.attributes.push({ name: `^${key}$`, value: `^${escapeRegExp(value)}$` });
+          }
+        }
+
+        if (query.categories.length > 0 || query.attributes.length > 0) {
+          queries.push(query);
+        }
       }
     }
 
-    if (query.categories.length === 0 && query.attributes.length === 0) {
-      console.error("No reliable attributes found for the selected element.");
+    if (queries.length === 0) {
+      console.error("No reliable attributes found for the selected elements.");
       return;
     }
 
-    const selectionString = JSON.stringify(query);
+    const selectionString = JSON.stringify(queries);
     setSelectionForTopic(new Set([selectionString]));
     setCreateModalOpen(true);
     setBcfMode(false);
+    highlighter.multiple = "none";
     await highlighter.clear();
   };
 
   const handleCancelBcfCreation = async () => {
     const highlighter = components.get(OBCF.Highlighter);
+    highlighter.multiple = "none";
     await highlighter.clear();
     setBcfMode(false);
   };
@@ -171,47 +180,50 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
         if (viewpoint.selectionComponents.size > 0) {
           const selectionString = viewpoint.selectionComponents.values().next().value;
           if (selectionString) {
-            const preQuery = JSON.parse(selectionString);
+            let preQuery = JSON.parse(selectionString);
+            console.log("preQuery:", preQuery);
+            if (!Array.isArray(preQuery)) {
+              preQuery = [preQuery];
+            }
             const queryName = `query-${topic.guid}`;
 
-            const finalQuery: any = {
-              attributes: {
-                queries: [],
-                conjunction: "AND",
-              },
-            };
+            const finalResult: OBC.ModelIdMap = {};
 
-            if (preQuery.categories && preQuery.categories.length > 0) {
-              finalQuery.categories = preQuery.categories.map((cat: string) => new RegExp(cat, "i"));
-            }
+            for (const pq of preQuery) {
+              const queryName = `query-${topic.guid}-${Math.random()}`;
+              const query: any = {
+                attributes: {
+                  queries: [],
+                  conjunction: "AND",
+                },
+              };
+              if (pq.categories && pq.categories.length > 0) {
+                query.categories = pq.categories.map((cat: string) => new RegExp(cat, "i"));
+              }
+              if (pq.attributes && pq.attributes.length > 0) {
+                query.attributes.queries = pq.attributes.map((attr: { name: string; value: string }) => {
+                  return { name: new RegExp(attr.name, "i"), value: new RegExp(attr.value, "i") };
+                });
+              }
 
-            if (preQuery.attributes && preQuery.attributes.length > 0) {
-              finalQuery.attributes.queries = preQuery.attributes.map((attr: { name: string; value: string }) => {
-                return { name: new RegExp(attr.name, "i"), value: new RegExp(attr.value, "i") };
-              });
-            }
-
-            if ((!finalQuery.categories || finalQuery.categories.length === 0) && finalQuery.attributes.queries.length === 0) {
-              console.warn("Query is empty, cannot search.");
-              return;
-            }
-
-            if (finder.list.has(queryName)) {
+              finder.create(queryName, [query]);
+              const result = await finder.list.get(queryName)!.test();
               finder.list.delete(queryName);
-            }
-            finder.create(queryName, [finalQuery]);
-            const query = finder.list.get(queryName);
-            if (!query) {
-              console.error("Failed to create query.");
-              return;
-            }
 
-            const finalResult = await query.test();
-            finder.list.delete(queryName);
+              for (const modelId in result) {
+                if (!finalResult[modelId]) {
+                  finalResult[modelId] = new Set();
+                }
+                for (const expressId of result[modelId]) {
+                  finalResult[modelId].add(expressId);
+                }
+              }
+            }
+            console.log("finalResult:", finalResult);
 
             if (finalResult && Object.keys(finalResult).length > 0) {
+              await hider.isolate(finalResult);
               await highlighter.highlightByID("select", finalResult);
-              // await hider.isolate(finalResult);
             } else {
               console.warn("Query returned no results.");
               await hider.set(true);
@@ -1150,7 +1162,5 @@ const HistoryModal = ({ onClose, topic, darkMode }: any) => {
     </div>
   );
 };
-
-
 
 export default BCFTopics;

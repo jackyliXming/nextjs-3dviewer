@@ -160,5 +160,6 @@
   "could_not_get_boxes": "無法取得項目的邊界框。",
   "comparing_items": "正在比較項目...",
   "collisions_found": "找到 {{count}} 個碰撞。",
-  "no_collisions_found": "找不到碰撞。"
+  "no_collisions_found": "找不到碰撞。",
+  "confirm_selection": "確認選取"
 }

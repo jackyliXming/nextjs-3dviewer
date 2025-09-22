@@ -160,5 +160,6 @@
   "could_not_get_boxes": "Could not get bounding boxes for items.",
   "comparing_items": "Comparing items...",
   "collisions_found": "{{count}} collisions found.",
-  "no_collisions_found": "No collisions found."
+  "no_collisions_found": "No collisions found.",
+  "confirm_selection": "Confirm Selection"
 }
