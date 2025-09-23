@@ -16,7 +16,7 @@ import Viewpoints from "@/components/IFCViewer/Viewpoints";
 import ViewOrientation from "@/components/IFCViewer/ViewOrientation";
 import BCFTopics from "@/components/IFCViewer/BCFTopics";
 import CollisionDetector from "@/components/IFCViewer/CollisionDetector";
-import SearchElement from "@/components/IFCViewer/SearchElement";
+import SearchElement, { SearchElementRef } from "@/components/IFCViewer/SearchElement";
 
 interface UploadedModel {
   id: string;
@@ -48,6 +48,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const viewpointsRef = useRef<OBC.Viewpoints | null>(null);
   const colorizeRef = useRef<{ enabled: boolean }>({ enabled: false });
   const coloredElements = useRef<Record<string, Set<number>>>({});
+  const searchElementRef = useRef<SearchElementRef>(null);
 
   const [progress, setProgress] = useState<number>(0);
   const [showProgressModal, setShowProgressModal] = useState(false);
@@ -73,9 +74,18 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [components, setComponents] = useState<OBC.Components | null>(null);
   const [isCollisionModalOpen, setIsCollisionModalOpen] = useState(false);
+  const [isAddingToGroup, setIsAddingToGroup] = useState(false);
+  const [activeAddGroupId, setActiveAddGroupId] = useState<number | null>(null);
+  const isAddingToGroupRef = useRef(isAddingToGroup);
+  const activeAddGroupIdRef = useRef(activeAddGroupId);
 
   const [selectedColor, setSelectedColor] = useState<string>("#ffa500");
   const selectedColorRef = useRef(selectedColor);
+
+  useEffect(() => {
+    isAddingToGroupRef.current = isAddingToGroup;
+    activeAddGroupIdRef.current = activeAddGroupId;
+  }, [isAddingToGroup, activeAddGroupId]);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -152,56 +162,57 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       highlighter.events.select.onHighlight.add(async (selection) => {
         const fragmentId = Object.keys(selection)[0];
         if (!fragmentId) {
+          if (!isAddingToGroupRef.current) {
             setInfoOpen(false);
             setSelectedModelId(null);
             setSelectedLocalId(null);
             setSelectedAttrs(null);
             setSelectedPsets(null);
-            return;
+          }
+          return;
         }
+        
         const expressId = [...selection[fragmentId]][0];
         const model = fragmentsRef.current?.list.get(fragmentId);
-        if (!model) return;
+        if (!model) {
+          return;
+        }
 
-        try {
-            setInfoLoading(true);
-            setInfoOpen(true);
-            setSelectedModelId(fragmentId);
-            setSelectedLocalId(expressId);
+        if (isAddingToGroupRef.current && activeAddGroupIdRef.current !== null) {
+          const [attrs] = await model.getItemsData([expressId], { attributesDefault: true });
+          let name = `Element ${expressId}`;
+          const nameAttribute = attrs?.Name as OBC.IDSAttribute;
+          if (nameAttribute && typeof nameAttribute.value === 'string') {
+            name = nameAttribute.value;
+          }
 
-            const [attrs] = await model.getItemsData([expressId], {
-                attributesDefault: true,
-            });
-            setSelectedAttrs(attrs ?? null);
+          const newItem = {
+            id: `${fragmentId}-${expressId}`,
+            name: name,
+            expressID: expressId,
+            fragmentId: fragmentId,
+          };
 
-            const psetsRaw = await getItemPsets(model, expressId);
-            setSelectedPsets(formatItemPsets(psetsRaw));
+          searchElementRef.current?.addItemToGroup(activeAddGroupIdRef.current, newItem);
+          await highlighter.clear("select");
 
-            console.log("Highlighted Element Attributes:", attrs);
-            console.log("Highlighted Element Psets:", psetsRaw);
+        } else {
+          try {
+              setInfoLoading(true);
+              setInfoOpen(true);
+              setSelectedModelId(fragmentId);
+              setSelectedLocalId(expressId);
 
-            const [geometryCollection] = await model.getItemsGeometry([expressId]);
-            console.log("Highlighted Element Geometry Collection:", geometryCollection);
+              const [attrs] = await model.getItemsData([expressId], {
+                  attributesDefault: true,
+              });
+              setSelectedAttrs(attrs ?? null);
 
-            const createMeshFromData = (data: FRAGS.MeshData) => {
-              const { positions, indices, normals, transform } = data;
-              if (!(positions && indices && normals)) return null;
-              const geometry = new BufferGeometry();
-              geometry.setAttribute("position", new BufferAttribute(positions, 3));
-              geometry.setAttribute("normal", new BufferAttribute(normals, 3));
-              geometry.setIndex(Array.from(indices));
-
-              const mesh = new Mesh(geometry, new MeshLambertMaterial({ color: "purple" }));
-              mesh.applyMatrix4(transform);
-              return mesh;
-            };
-
-            if (geometryCollection) {
-              const meshes = geometryCollection.map(createMeshFromData).filter(mesh => mesh !== null);
-              console.log("Created Meshes from Geometry:", meshes);
-            }
-        } finally {
-            setInfoLoading(false);
+              const psetsRaw = await getItemPsets(model, expressId);
+              setSelectedPsets(formatItemPsets(psetsRaw));
+          } finally {
+              setInfoLoading(false);
+          }
         }
       });
 
@@ -818,6 +829,13 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
     }, 100);
   };
 
+  const handleToggleAddMode = (active: boolean, groupId: number | null) => {
+    setIsAddingToGroup(active);
+    setActiveAddGroupId(groupId);
+    // The highlighter should remain enabled to capture clicks.
+    // The logic within onHighlight will handle the mode change.
+  };
+
   const handleColorize = (color?: string) => {
     if (!color) return;
     setSelectedColor(color);
@@ -1017,12 +1035,16 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
 
       {isSearchOpen && components && (
         <SearchElement
+          ref={searchElementRef}
           components={components}
           darkMode={darkMode}
           onClose={() => {
             setIsSearchOpen(false);
             setActiveTool(null);
+            setIsAddingToGroup(false);
+            setActiveAddGroupId(null);
           }}
+          onToggleAddMode={handleToggleAddMode}
         />
       )}
 

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Plus, Trash2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
+import { X, Plus, Trash2, ChevronDown, ChevronRight, Pencil, PlusCircle } from "lucide-react";
 import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import Draggable from "react-draggable";
@@ -10,6 +10,7 @@ interface Props {
   components: OBC.Components;
   darkMode: boolean;
   onClose: () => void;
+  onToggleAddMode: (active: boolean, groupId: number | null) => void;
 }
 
 type TQueryRow = {
@@ -35,7 +36,11 @@ type TResultGroup = {
   isEditing: boolean;
 };
 
-export default function SearchElement({ components, darkMode, onClose }: Props) {
+export type SearchElementRef = {
+  addItemToGroup: (groupId: number, item: TResultItem) => void;
+};
+
+const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMode, onClose, onToggleAddMode }, ref) => {
   const { t } = useTranslation();
   const [isClient, setIsClient] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
@@ -46,6 +51,23 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
   const [notification, setNotification] = useState<string | null>(null);
   const [resultGroups, setResultGroups] = useState<TResultGroup[]>([]);
   const [groupCounter, setGroupCounter] = useState(1);
+  const [addingToGroup, setAddingToGroup] = useState<number | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    addItemToGroup: (groupId: number, item: TResultItem) => {
+      setResultGroups(prevGroups =>
+        prevGroups.map(group => {
+          if (group.id === groupId) {
+            const itemExists = group.items.some(existingItem => existingItem.id === item.id);
+            if (!itemExists) {
+              return { ...group, items: [...group.items, item] };
+            }
+          }
+          return group;
+        })
+      );
+    }
+  }));
 
   useEffect(() => {
     setIsClient(true);
@@ -138,6 +160,12 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
 
     const highlighter = components.get(OBCF.Highlighter);
     await highlighter.highlightByID("select", { [fragmentId]: new Set([expressID]) }, true, true);
+  };
+
+  const handleToggleAddMode = (groupId: number) => {
+    const newAddingToGroup = addingToGroup === groupId ? null : groupId;
+    setAddingToGroup(newAddingToGroup);
+    onToggleAddMode(newAddingToGroup !== null, newAddingToGroup);
   };
 
   const handleSearch = useCallback(async () => {
@@ -442,6 +470,12 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
                     )}
                   </div>
                   <div className="flex items-center">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleToggleAddMode(group.id); }} 
+                      className={`p-1 rounded ${addingToGroup === group.id ? "bg-green-500 text-white" : "text-gray-400 hover:text-white"}`}
+                    >
+                      <PlusCircle size={14} />
+                    </button>
                     <button onClick={(e) => { e.stopPropagation(); toggleGroupNameEdit(group.id); }} className="p-1 text-gray-400 hover:text-white">
                       <Pencil size={14} />
                     </button>
@@ -479,4 +513,6 @@ export default function SearchElement({ components, darkMode, onClose }: Props) 
       </div>
     </Draggable>
   );
-}
+});
+
+export default SearchElement;
