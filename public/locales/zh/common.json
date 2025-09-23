@@ -161,5 +161,8 @@
   "comparing_items": "正在比較項目...",
   "collisions_found": "找到 {{count}} 個碰撞。",
   "no_collisions_found": "找不到碰撞。",
-  "confirm_selection": "確認選取"
+  "confirm_selection": "確認選取",
+  "search_results": "搜尋結果",
+  "no_results_yet": "尚無結果。",
+  "element_group": "元素群組 {{count}}"
 }

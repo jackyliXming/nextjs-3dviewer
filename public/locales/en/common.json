@@ -161,5 +161,8 @@
   "comparing_items": "Comparing items...",
   "collisions_found": "{{count}} collisions found.",
   "no_collisions_found": "No collisions found.",
-  "confirm_selection": "Confirm Selection"
+  "confirm_selection": "Confirm Selection",
+  "search_results": "Search Results",
+  "no_results_yet": "No results yet.",
+  "element_group": "ELEMENT GROUP {{count}}"
 }
