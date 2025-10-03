@@ -46,6 +46,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const measurerRef = useRef<OBCF.LengthMeasurement | null>(null);
   const areaMeasurerRef = useRef<OBCF.AreaMeasurement | null>(null);
   const viewpointsRef = useRef<OBC.Viewpoints | null>(null);
+  const highlighterRef = useRef<OBCF.Highlighter | null>(null);
   const colorizeRef = useRef<{ enabled: boolean }>({ enabled: false });
   const coloredElements = useRef<Record<string, Set<number>>>({});
   const searchElementRef = useRef<SearchElementRef>(null);
@@ -158,6 +159,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       const highlighter = components.get(OBCF.Highlighter);
       highlighter.setup({ world });
       highlighter.zoomToSelection = true;
+      highlighterRef.current = highlighter;
 
       highlighter.events.select.onHighlight.add(async (selection) => {
         const fragmentId = Object.keys(selection)[0];
@@ -169,6 +171,17 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
             setSelectedAttrs(null);
             setSelectedPsets(null);
           }
+          return;
+        }
+
+        const isMultiSelect = Object.keys(selection).length > 1 || (selection[fragmentId] && selection[fragmentId].size > 1);
+
+        if (isMultiSelect && !isAddingToGroupRef.current) {
+          setInfoOpen(false);
+          setSelectedModelId(null);
+          setSelectedLocalId(null);
+          setSelectedAttrs(null);
+          setSelectedPsets(null);
           return;
         }
         
@@ -369,6 +382,113 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
       }
     }
   }, [selectedColor]);
+
+  useEffect(() => {
+    const container = viewerRef.current;
+    if (!container) return;
+
+    let start: Vector2 | null = null;
+    let box: HTMLDivElement | null = null;
+
+    const onPointerDown = (event: PointerEvent) => {
+      // Require Left Mouse Button + Shift key
+      if (event.button !== 0 || !event.shiftKey || !worldRef.current) return;
+
+      const rect = container.getBoundingClientRect();
+      start = new Vector2(event.clientX - rect.left, event.clientY - rect.top);
+
+      box = document.createElement("div");
+      box.className = "selection-box";
+      box.style.left = `${start.x}px`;
+      box.style.top = `${start.y}px`;
+
+      container.appendChild(box);
+
+      if (worldRef.current.camera.controls) {
+        worldRef.current.camera.controls.enabled = false;
+      }
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!start || !box) return;
+
+      const rect = container.getBoundingClientRect();
+      const current = new Vector2(event.clientX - rect.left, event.clientY - rect.top);
+
+      const minX = Math.min(start.x, current.x);
+      const minY = Math.min(start.y, current.y);
+      const width = Math.abs(start.x - current.x);
+      const height = Math.abs(start.y - current.y);
+
+      box.style.left = `${minX}px`;
+      box.style.top = `${minY}px`;
+      box.style.width = `${width}px`;
+      box.style.height = `${height}px`;
+    };
+
+    const onPointerUp = async (event: PointerEvent) => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+
+      if (worldRef.current && worldRef.current.camera.controls) {
+        worldRef.current.camera.controls.enabled = true;
+      }
+
+      if (!start || !box || !worldRef.current || !fragmentsRef.current || !highlighterRef.current) {
+        box?.remove();
+        start = null;
+        box = null;
+        return;
+      }
+
+      const rect = container.getBoundingClientRect();
+      const end = new Vector2(event.clientX - rect.left, event.clientY - rect.top);
+
+      const topLeft = new Vector2(Math.min(start.x, end.x), Math.min(start.y, end.y));
+      const bottomRight = new Vector2(Math.max(start.x, end.x), Math.max(start.y, end.y));
+
+      box.remove();
+      start = null;
+      box = null;
+
+      const modelIdMap: OBC.ModelIdMap = {};
+      for (const [, model] of fragmentsRef.current.list) {
+        const res = await model.rectangleRaycast({
+          camera: worldRef.current.camera.three,
+          dom: worldRef.current.renderer.three.domElement,
+          topLeft,
+          bottomRight,
+          fullyIncluded: true,
+        });
+
+        if (res && res.localIds.length) {
+          modelIdMap[model.modelId] = new Set(res.localIds);
+        }
+      }
+
+      if (Object.keys(modelIdMap).length) {
+        await highlighterRef.current.highlightByID(
+          highlighterRef.current.config.selectName,
+          modelIdMap,
+          false,
+          false
+        );
+      } else {
+        await highlighterRef.current.clear(highlighterRef.current.config.selectName);
+      }
+    };
+
+    container.addEventListener("pointerdown", onPointerDown);
+
+    return () => {
+      container.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, []);
 
   const IfcUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
