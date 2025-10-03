@@ -27,7 +27,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({
       size="lg"
       className={className}
     >
-      {!collapsed && (darkMode ? "Dark Mode" : "Light Mode")}
+      {/* {!collapsed && (darkMode ? "Dark Mode" : "Light Mode")} */}
     </Switch>
   );
 };

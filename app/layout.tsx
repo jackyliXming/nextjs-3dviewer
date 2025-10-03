@@ -46,24 +46,6 @@ export default function RootLayout({
           <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
             <div className="relative flex flex-col h-screen">
                 {children}
-              <footer className="w-full flex items-center justify-center py-3">
-              <a
-                        className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-                        href="https://gomore.com.tw/2015/index.html"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >                        
-                        Go to Gomore Website →
-                      </a>
-                      <a
-                        className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-                        href="https://gomore.com.tw/2015/index.html"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        2015 © Gomore Building Envelope Technology Co. Ltd | TEL:02 2797-9977 FAX:02 2797 2588
-                      </a>
-              </footer>
             </div>
           </Providers>
         </I18nProvider>

@@ -8,11 +8,6 @@ interface Props {
 
 export default function IFCViewerUI({ darkMode, viewerRef, uploadedModels }: Props) {
   return (
-    <div className="flex flex-col flex-1">
-      {/* Viewer */}
-      <div ref={viewerRef} className="flex-1" />
-
-    </div>
+    <div ref={viewerRef} className="w-full h-full" />
   );
 }
-

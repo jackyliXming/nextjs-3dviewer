@@ -52,10 +52,6 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
   const [selectionForTopic, setSelectionForTopic] = useState<Set<string> | null>(null);
   const [newComment, setNewComment] = useState({ name: "", comment: "" });
 
-  const panelRef = useRef<HTMLDivElement>(null);
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const dragging = useRef(false);
-
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -360,61 +356,19 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
     input.click();
   };
 
-  const onMouseDown = (e: React.MouseEvent) => {
-    if (!panelRef.current) return;
-    dragging.current = true;
-    const rect = panelRef.current.getBoundingClientRect();
-    dragOffset.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
-
-  const onMouseMove = (e: MouseEvent) => {
-    if (!dragging.current || !panelRef.current) return;
-
-    const panel = panelRef.current;
-    const width = panel.offsetWidth;
-    const height = panel.offsetHeight;
-
-    let left = e.clientX - dragOffset.current.x;
-    let top = e.clientY - dragOffset.current.y;
-
-    left = Math.max(0, Math.min(window.innerWidth - width, left));
-    top = Math.max(0, Math.min(window.innerHeight - height, top));
-
-    panel.style.left = `${left}px`;
-    panel.style.top = `${top}px`;
-  };
-
-  const onMouseUp = () => {
-    dragging.current = false;
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-  };
 
   return (
-    <div
-      ref={panelRef}
-      className={`fixed z-50 ${darkMode ? "bg-gray-800 text-white border-gray-600" : "bg-white text-black border-gray-300"} border rounded-lg shadow-lg flex flex-col overflow-hidden ${
-        collapsed ? "w-40 h-12 cursor-pointer" : "w-96 max-h-[600px]"
-      }`}
-      style={{ bottom: "1rem", right: "1rem" }}
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      <div
-        className={`${darkMode ? "bg-blue-900" : "bg-blue-800"} text-amber-100 px-2 py-1 flex justify-between items-center font-bold cursor-grab select-none`}
-        onMouseDown={onMouseDown}
-      >
-        <span>{isClient ? t("bcf_topics") : "BCF Topics"}</span>
-        <span onClick={() => setCollapsed(!collapsed)} className="cursor-pointer">{collapsed ?  "▲" : "▼" }</span>
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg font-bold">{isClient ? t("bcf_topics") : "BCF Topics"}</h2>
+        <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-700">
+          {collapsed ? "▲" : "▼"}
+        </button>
       </div>
 
       {!collapsed && (
-        <div className="p-2 flex flex-col gap-2">
-          <div className="flex gap-2">
+        <>
+          <div className="flex gap-2 mb-2">
             {!bcfMode ? (
               <button
                 className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-2 py-1 rounded`}
@@ -453,9 +407,9 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
             </button>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
             {/* Topics List */}
-            <div className={`flex-1 max-h-[500px] overflow-y-auto border ${darkMode ? "border-gray-600" : "border-gray-300"} p-1`}>
+            <div className={`flex-1 overflow-y-auto border ${darkMode ? "border-gray-600" : "border-gray-300"} p-1`}>
               <h5 className="font-semibold mb-1 fixed">{isClient ? t("topics") : "Topics"}</h5>
               <br/>
               <ul>
@@ -483,7 +437,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
             </div>
 
             {/* Topic Details */}
-            <div className={`flex-2 max-h-[500px] overflow-y-auto border ${darkMode ? "border-gray-600" : "border-gray-300"} p-1`}>
+            <div className={`flex-1 overflow-y-auto border ${darkMode ? "border-gray-600" : "border-gray-300"} p-1`}>
               <div className="flex justify-between items-center">
                 <h5 className="font-semibold mb-1">{isClient ? t("details") : "Details"}</h5>
                 {selectedTopic && (
@@ -557,7 +511,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
               )}
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {isCreateModalOpen && (

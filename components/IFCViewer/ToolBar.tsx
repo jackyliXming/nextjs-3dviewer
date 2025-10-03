@@ -143,7 +143,7 @@ export default function ToolBar({ darkMode, activeTool, onSelectTool, lengthMode
   };
 
   return (
-    <div className="absolute top-1/2 left-80 transform -translate-y-1/2 flex flex-col gap-4">
+    <div className="absolute top-1/2 left-4 transform -translate-y-1/2 flex flex-col gap-4">
       <div className="group relative">
         <button className={btnStyle("clipper")} onClick={() => handleClick("clipper")}>
           <Scissors size={24} />

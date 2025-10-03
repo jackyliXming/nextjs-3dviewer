@@ -61,7 +61,7 @@ const ViewOrientation: React.FC<ViewOrientationProps> = ({ world, components }) 
     } ${bgColor}`;
 
   return (
-    <div className="absolute left-90 bottom-5 w-15 h-15 perspective-[200px]">
+    <div className="absolute left-4 bottom-5 w-15 h-15 perspective-[200px]">
       <div
         ref={cubeRef}
         className="w-full h-full relative [transform-style:preserve-3d]"

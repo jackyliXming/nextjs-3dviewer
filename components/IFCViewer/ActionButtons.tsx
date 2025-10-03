@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eye, Focus, RefreshCcw, Ghost } from "lucide-react";
+import { Eye, Focus, RefreshCcw, Ghost, EyeOff, Pipette } from "lucide-react";
+import { Tooltip } from "@heroui/react";
 
 interface ActionButtonsProps {
   darkMode: boolean;
@@ -28,52 +29,52 @@ export default function ActionButtons({
     setIsClient(true);
   }, []);
 
+  const buttonClass = `p-2 rounded-md ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-300"}`;
+
   return (
     <div
-      className={`absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4 px-4 py-2 rounded-xl shadow-lg
-        ${darkMode ? "bg-gray-800 text-amber-100" : "bg-white text-gray-900"}`}
+      className={`absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 px-4 py-2 rounded-full shadow-lg
+        ${darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}`}
     >
-      <button
-        onClick={onToggleVisibility}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition
-          ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-600 hover:bg-blue-700"} text-white`}
-      >
-        <Eye size={18} />
-        {isClient ? t("toggle_visibility") : "Toggle Visibility"}
-      </button>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium">{isClient ? t("visibility") : "Visibility"}</span>
+        <Tooltip content={isClient ? t("show_all") : "Show All"}>
+          <button onClick={onShow} className={buttonClass}>
+            <Eye size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip content={isClient ? t("toggle_ghost") : "Toggle Ghost"}>
+          <button onClick={onGhost} className={`${buttonClass} ${isGhost ? (darkMode ? "bg-purple-900" : "bg-purple-700") : ""}`}>
+            <Ghost size={18} />
+          </button>
+        </Tooltip>
+      </div>
 
-      <button
-        onClick={onIsolate}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition
-          ${darkMode ? "bg-green-800 hover:bg-green-900" : "bg-green-600 hover:bg-green-700"} text-white`}
-      >
-        <Focus size={18} />
-        {isClient ? t("isolate") : "Isolate"}
-      </button>
+      <div className="h-6 border-l border-gray-500"></div>
 
-      <button
-        onClick={onShow}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition
-          ${darkMode ? "bg-yellow-700 hover:bg-yellow-800" : "bg-yellow-600 hover:bg-yellow-700"} text-white`}
-      >
-        <RefreshCcw size={18} />
-        {isClient ? t("show_all") : "Show All"}
-      </button>
-
-      <button
-        onClick={onGhost}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition
-          ${isGhost
-            ? darkMode
-              ? "bg-purple-900"
-              : "bg-purple-700"
-            : darkMode
-              ? "bg-purple-800 hover:bg-purple-900"
-              : "bg-purple-600 hover:bg-purple-700"} text-white`}
-      >
-        <Ghost size={18} />
-        {isClient ? (isGhost ? t("disable_ghost") : t("ghost_mode")) : "Ghost Mode"}
-      </button>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium">{isClient ? t("selection") : "Selection"}</span>
+        <Tooltip content={isClient ? t("focus") : "Focus"}>
+          <button onClick={onIsolate} className={buttonClass}>
+            <Focus size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip content={isClient ? t("hide") : "Hide"}>
+          <button onClick={onToggleVisibility} className={buttonClass}>
+            <EyeOff size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip content={isClient ? t("isolate") : "Isolate"}>
+          <button onClick={onIsolate} className={buttonClass}>
+            <Focus size={18} />
+          </button>
+        </Tooltip>
+        <Tooltip content={isClient ? t("colorize") : "Colorize"}>
+          <button className={buttonClass}>
+            <Pipette size={18} />
+          </button>
+        </Tooltip>
+      </div>
     </div>
   );
 }

@@ -87,7 +87,7 @@ export default function Viewpoints({
   };
 
   return (
-    <div className={`p-4 ${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-black"} w-70`}>
+    <div className="flex flex-col h-full">
       <h2 className="text-lg font-bold mb-2">{isClient ? t("viewpoints") : "Viewpoints"}</h2>
 
       <button

@@ -17,6 +17,11 @@ import ViewOrientation from "@/components/IFCViewer/ViewOrientation";
 import BCFTopics from "@/components/IFCViewer/BCFTopics";
 import CollisionDetector from "@/components/IFCViewer/CollisionDetector";
 import SearchElement, { SearchElementRef } from "@/components/IFCViewer/SearchElement";
+import SearchResultsPanel from "@/components/IFCViewer/SearchResultsPanel";
+import SideBar from "@/components/IFCViewer/SideBar";
+import SideBarTab from "@/components/IFCViewer/SideBarTab";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 
 interface UploadedModel {
   id: string;
@@ -35,7 +40,15 @@ interface StoredViewpoint {
 type ItemProps = Record<string, any>;
 type PsetDict = Record<string, Record<string, any>>;
 
-export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) {
+type TResultGroup = {
+  id: number;
+  name: string;
+  items: any[];
+  isCollapsed: boolean;
+  isEditing: boolean;
+};
+
+export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode: boolean, toggleTheme: () => void }) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const componentsRef = useRef<OBC.Components | null>(null);
   const fragmentsRef = useRef<OBC.FragmentsManager | null>(null);
@@ -55,6 +68,7 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [uploadedModels, setUploadedModels] = useState<UploadedModel[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoLoading, setInfoLoading] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
@@ -77,11 +91,23 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   const [isCollisionModalOpen, setIsCollisionModalOpen] = useState(false);
   const [isAddingToGroup, setIsAddingToGroup] = useState(false);
   const [activeAddGroupId, setActiveAddGroupId] = useState<number | null>(null);
+  const [resultGroups, setResultGroups] = useState<TResultGroup[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const isAddingToGroupRef = useRef(isAddingToGroup);
   const activeAddGroupIdRef = useRef(activeAddGroupId);
 
   const [selectedColor, setSelectedColor] = useState<string>("#ffa500");
   const selectedColorRef = useRef(selectedColor);
+
+  useEffect(() => {
+    // Resize the viewer after the sidebar transition is complete
+    setTimeout(() => {
+      if (worldRef.current?.renderer && cameraRef.current) {
+        worldRef.current.renderer.resize();
+        cameraRef.current.updateAspect();
+      }
+    }, 300);
+  }, [isSidebarOpen]);
 
   useEffect(() => {
     isAddingToGroupRef.current = isAddingToGroup;
@@ -1025,151 +1051,177 @@ export default function IFCViewerContainer({ darkMode }: { darkMode: boolean }) 
   };
 
   return (
-    <div className="flex w-full h-screen">
-       {/* Sidebar */}
-      <aside className={`transition-width duration-300 ${darkMode ? "bg-gray-900 text-white" : "bg-indigo-400 text-white"}`}>
-        <ModelManager
+    <div className="flex w-full h-full">
+      <SideBar
+        darkMode={darkMode}
+        onToggle={setIsSidebarOpen}
+        themeSwitcher={<ThemeSwitch darkMode={darkMode} toggleTheme={toggleTheme} />}
+        languageSwitcher={<LanguageSwitch />}
+      >
+        <SideBarTab name="Models">
+          <ModelManager
+            darkMode={darkMode}
+            uploadedModels={uploadedModels}
+            IfcUpload={IfcUpload}
+            handleFragmentUpload={handleFragmentUpload}
+            handleJSONUpload={handleJSONUpload}
+            handleDownloadIFC={handleDownloadIFC}
+            downloadFragments={downloadFragments}
+            handleDownloadJSON={handleDownloadJSON}
+            deleteAllModels={deleteAllModels}
+            deleteSelectedModel={deleteSelectedModel}
+          />
+        </SideBarTab>
+        <SideBarTab name="Viewpoints">
+          <Viewpoints
+            darkMode={darkMode}
+            createViewpoint={createViewpoint}
+            updateViewpointCamera={updateViewpointCamera}
+            setWorldCamera={setWorldCamera}
+            getViewpointSnapshotData={getViewpointSnapshotData}
+            storedViews={storedViews}
+            setStoredViews={setStoredViews}
+          />
+        </SideBarTab>
+        {components && (
+          <SideBarTab name="Search">
+            <SearchElement
+              ref={searchElementRef}
+              components={components}
+              darkMode={darkMode}
+              onClose={() => {
+                setIsSearchOpen(false);
+                setShowSearchResults(false);
+                setActiveTool(null);
+                setIsAddingToGroup(false);
+                setActiveAddGroupId(null);
+              }}
+              onToggleAddMode={handleToggleAddMode}
+              onSearchResults={(newGroups) => {
+                setResultGroups(prevGroups => [...prevGroups, ...newGroups]);
+                setShowSearchResults(true);
+              }}
+            />
+          </SideBarTab>
+        )}
+        {components && (
+          <SideBarTab name="BCF">
+            <BCFTopics
+              components={components}
+              world={worldRef.current}
+              darkMode={darkMode}
+              bcfMode={bcfMode}
+              setBcfMode={setBcfMode}
+              selectedModelId={selectedModelId}
+              selectedLocalId={selectedLocalId}
+            />
+          </SideBarTab>
+        )}
+        {components && (
+          <SideBarTab name="Info">
+            <IFCInfoPanel
+              components={components}
+              darkMode={darkMode}
+              infoLoading={infoLoading}
+              modelId={selectedModelId}
+              localId={selectedLocalId}
+              attrs={selectedAttrs}
+              psets={selectedPsets}
+              onClose={() => setInfoOpen(false)}
+            />
+          </SideBarTab>
+        )}
+      </SideBar>
+
+      {showSearchResults && (
+        <SearchResultsPanel
+          components={components!}
           darkMode={darkMode}
-          sidebarCollapsed={sidebarCollapsed}
-          setSidebarCollapsed={setSidebarCollapsed}
-          uploadedModels={uploadedModels}
-          IfcUpload={IfcUpload}
-          handleFragmentUpload={handleFragmentUpload}
-          handleJSONUpload={handleJSONUpload}
-          handleDownloadIFC={handleDownloadIFC}
-          downloadFragments={downloadFragments}
-          handleDownloadJSON={handleDownloadJSON}
-          deleteAllModels={deleteAllModels}
-          deleteSelectedModel={deleteSelectedModel}
-        />
-      </aside>
-
-      {/* Main UI */}
-      <IFCViewerUI
-        darkMode={darkMode}
-        viewerRef={viewerRef}
-        uploadedModels={uploadedModels}
-      />
-
-      <ToolBar
-        darkMode={darkMode}
-        activeTool={activeTool}
-        onSelectTool={(tool) => {
-          if (tool === "length") handleLength();
-          else if (tool === "clipper") handleClipper();
-          else if (tool === "area") handleArea();
-          else if (tool === "colorize") handleColorizeToggle();
-          else if (tool === "collision") {
-            setActiveTool(tool);
-            setIsCollisionModalOpen(true);
-          } else if (tool === "search") {
-            setActiveTool(tool);
-          } else {
-            setActiveTool(null);
-            setIsSearchOpen(false);
-          }
-        }}
-        lengthMode={lengthMode}
-        setLengthMode={setLengthMode}
-        areaMode={areaMode}
-        setAreaMode={setAreaMode}
-        onColorize={handleColorize}
-        onClearColor={handleClearColor}
-      />
-
-      {components && worldRef.current && (
-        <CollisionDetector
-          isOpen={isCollisionModalOpen}
-          onClose={() => {
-            setIsCollisionModalOpen(false);
-            setActiveTool(null);
-          }}
-          components={components}
-          world={worldRef.current}
-          darkMode={darkMode}
-          categories={categories}
-        />
-      )}
-
-      <CameraControls
-        darkMode={darkMode}
-        projection={projection}
-        navigation={navigation}
-        setProjection={setProjection}
-        setNavigation={setNavigation}
-        worldRef={worldRef}
-      />
-
-      <Viewpoints
-        darkMode={darkMode}
-        createViewpoint={createViewpoint}
-        updateViewpointCamera={updateViewpointCamera}
-        setWorldCamera={setWorldCamera}
-        getViewpointSnapshotData={getViewpointSnapshotData}
-        storedViews={storedViews}
-        setStoredViews={setStoredViews}
-      />
-
-      {componentsRef.current && fragmentsRef.current && worldRef.current && (
-        <ViewOrientation
-          components={componentsRef.current}
-          fragments={fragmentsRef.current}
-          world={worldRef.current}
-        />
-      )}
-
-      <ActionButtons
-        darkMode={darkMode}
-        onToggleVisibility={onToggleVisibility}
-        onIsolate={onIsolate}
-        onShow={onShow}
-        onGhost={handleGhost}
-        isGhost={isGhost}
-      />
-
-      {components && (
-        <BCFTopics 
-          components={components} 
-          world={worldRef.current} 
-          darkMode={darkMode} 
-          bcfMode={bcfMode}
-          setBcfMode={setBcfMode}
-          selectedModelId={selectedModelId}
-          selectedLocalId={selectedLocalId}
-        />
-      )}
-
-      {/* Info Panel */}
-      {infoOpen && components && (
-        <IFCInfoPanel
-          components={components}
-          darkMode={darkMode}
-          infoLoading={infoLoading}
-          modelId={selectedModelId}
-          localId={selectedLocalId}
-          attrs={selectedAttrs}
-          psets={selectedPsets}
-          onClose={() => setInfoOpen(false)}
-        />
-      )}
-
-      {isSearchOpen && components && (
-        <SearchElement
-          ref={searchElementRef}
-          components={components}
-          darkMode={darkMode}
-          onClose={() => {
-            setIsSearchOpen(false);
-            setActiveTool(null);
-            setIsAddingToGroup(false);
-            setActiveAddGroupId(null);
-          }}
+          resultGroups={resultGroups}
+          setResultGroups={setResultGroups}
+          onClose={() => setShowSearchResults(false)}
           onToggleAddMode={handleToggleAddMode}
+          addingToGroup={activeAddGroupId}
         />
       )}
 
-      <LoadingModal darkMode={darkMode} progress={progress} show={showProgressModal} />
+      <div className="relative flex-grow transition-all duration-300 min-w-0">
+        <IFCViewerUI
+          darkMode={darkMode}
+          viewerRef={viewerRef}
+          uploadedModels={uploadedModels}
+        />
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none [&>*]:pointer-events-auto">
+            <ToolBar
+              darkMode={darkMode}
+              activeTool={activeTool}
+              onSelectTool={(tool) => {
+                if (tool === "length") handleLength();
+                else if (tool === "clipper") handleClipper();
+                else if (tool === "area") handleArea();
+                else if (tool === "colorize") handleColorizeToggle();
+                else if (tool === "collision") {
+                  setActiveTool(tool);
+                  setIsCollisionModalOpen(true);
+                } else if (tool === "search") {
+                  setActiveTool(tool);
+                  setIsSearchOpen(true);
+                } else {
+                  setActiveTool(null);
+                  setIsSearchOpen(false);
+                }
+              }}
+              lengthMode={lengthMode}
+              setLengthMode={setLengthMode}
+              areaMode={areaMode}
+              setAreaMode={setAreaMode}
+              onColorize={handleColorize}
+              onClearColor={handleClearColor}
+            />
 
+            {components && worldRef.current && (
+              <CollisionDetector
+                isOpen={isCollisionModalOpen}
+                onClose={() => {
+                  setIsCollisionModalOpen(false);
+                  setActiveTool(null);
+                }}
+                components={components}
+                world={worldRef.current}
+                darkMode={darkMode}
+                categories={categories}
+              />
+            )}
+
+            <CameraControls
+              darkMode={darkMode}
+              projection={projection}
+              navigation={navigation}
+              setProjection={setProjection}
+              setNavigation={setNavigation}
+              worldRef={worldRef}
+            />
+
+            {componentsRef.current && fragmentsRef.current && worldRef.current && (
+              <ViewOrientation
+                components={componentsRef.current}
+                fragments={fragmentsRef.current}
+                world={worldRef.current}
+              />
+            )}
+
+            <ActionButtons
+              darkMode={darkMode}
+              onToggleVisibility={onToggleVisibility}
+              onIsolate={onIsolate}
+              onShow={onShow}
+              onGhost={handleGhost}
+              isGhost={isGhost}
+            />
+
+            <LoadingModal darkMode={darkMode} progress={progress} show={showProgressModal} />
+        </div>
+      </div>
     </div>
   );
 }
