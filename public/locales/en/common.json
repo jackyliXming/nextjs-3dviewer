@@ -167,5 +167,8 @@
   "confirm_selection": "Confirm Selection",
   "search_results": "Search Results",
   "no_results_yet": "No results yet.",
-  "element_group": "ELEMENT GROUP {{count}}"
+  "element_group": "ELEMENT GROUP {{count}}",
+  "visibility": "Visibility",
+  "selection": "Selection",
+  "tools": "Tools"
 }

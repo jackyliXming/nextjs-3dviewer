@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Tooltip } from "@heroui/react";
-import { Building, Camera, Search, MessageSquare, Info } from "lucide-react";
+import { Upload, Camera, Search, MessageSquare, Info, AlertTriangle } from "lucide-react";
 
 interface SideBarProps {
   darkMode: boolean;
@@ -33,7 +33,7 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
   const getIcon = (name: string) => {
     switch (name) {
       case "Models":
-        return <Building size={20} />;
+        return <Upload size={20} />;
       case "Viewpoints":
         return <Camera size={20} />;
       case "Search":
@@ -42,6 +42,8 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
         return <MessageSquare size={20} />;
       case "Info":
         return <Info size={20} />;
+      case "Collision":
+        return <AlertTriangle size={20} />;
       default:
         return "?";
     }

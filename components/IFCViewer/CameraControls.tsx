@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import * as OBC from "@thatopen/components";
+import { Camera } from "lucide-react";
 
 interface CameraControlsProps {
   darkMode: boolean;
@@ -26,6 +27,7 @@ export default function CameraControls({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [show2DMenu, setShow2DMenu] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -95,116 +97,110 @@ export default function CameraControls({
   };
 
   return (
-    <>
-      <div
-        className={`absolute top-4 left-1/2 transform -translate-x-1/2 flex gap-6 px-6 py-3 rounded-xl shadow-lg
-          ${darkMode ? "bg-gray-800 text-amber-100" : "bg-white text-gray-900"}`}
+    <div className="absolute top-4 right-4">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-lg
+          ${darkMode ? "bg-gray-800/50 text-white hover:bg-gray-700/50" : "bg-white/50 text-black hover:bg-gray-200/50"}`}
       >
-        {/* Projection */}
-        <div className="flex flex-col items-center gap-2">
-          <span className="font-medium">{isClient ? t("projection") : "Projection"}</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleProjectionChange("Perspective")}
-              disabled={projection === "Perspective"}
-              className={`px-3 py-2 rounded-lg 
-                ${projection === "Perspective"
-                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
-            >
-              {isClient ? t("perspective") : "Perspective"}
-            </button>
-            
-            <button
-              onClick={() => {
-                  handleProjectionChange("Orthographic");
-                  if (navigation === "FirstPerson"){
-                    worldRef.current?.camera.set("Orbit");
-                    setNavigation("Orbit");
-                    handleNavigationChange("Orbit");
-                  }
-                  worldRef.current?.camera.projection.set("Orthographic");
-                  setProjection("Orthographic");                  
-                }}
-              disabled={projection === "Orthographic"}
-              className={`px-3 py-2 rounded-lg 
-                ${projection === "Orthographic"
-                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
-            >
-              {isClient ? t("orthographic") : "Orthographic"}
-            </button>
-          </div>
-        </div>
-
-        <div className={`w-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
-
-        {/* Navigation */}
-        <div className="flex flex-col items-center gap-2">
-          <span className="font-medium">{isClient ? t("navigation_mode") : "Navigation Mode"}</span>
-          <div className="flex gap-2">
-            {(["Orbit", "FirstPerson", "Plan"] as const).map((mode) => (
+        <Camera size={18} />
+        <span>Camera</span>
+      </button>
+      {isExpanded && (
+        <div
+          className={`absolute top-full right-0 mt-2 flex flex-col gap-4 p-4 rounded-lg shadow-lg
+            ${darkMode ? "bg-gray-800/80 text-white" : "bg-white/80 text-black"}`}
+        >
+          {/* Projection */}
+          <div className="flex flex-col items-center gap-2">
+            <span className="font-medium">{isClient ? t("projection") : "Projection"}</span>
+            <div className="flex gap-2">
               <button
-                key={mode}
-                onClick={() => handleNavigationChange(mode)}
-                disabled={mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")}
+                onClick={() => handleProjectionChange("Perspective")}
+                disabled={projection === "Perspective"}
                 className={`px-3 py-2 rounded-lg 
-                  ${mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")
+                  ${projection === "Perspective"
                     ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-purple-600 text-white hover:bg-purple-700"}`}
+                    : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
               >
-                {isClient ? t(mode.toLowerCase()) : mode}
+                {isClient ? t("perspective") : "Perspective"}
               </button>
-            ))}
-          </div>
-        </div>
-
-        <div className={`w-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
-
-        {/* 2D View Dropdown */}
-        <div className="flex flex-col items-center gap-2 relative">
-          <span className="font-medium">{isClient ? t("2d_views") : "2D Views"}</span>
-          <button
-            onClick={() => setShow2DMenu((prev) => !prev)}
-            className="px-3 py-2 rounded-lg bg-yellow-600 text-white hover:bg-yellow-700"
-          >
-            {isClient ? t("2d_view_menu") : "2D View Menu"}
-          </button>
-
-          {show2DMenu && (
-            <div className="absolute top-18 left-0 flex flex-col gap-1 bg-gray-200 dark:bg-gray-700 p-2 rounded shadow-lg z-50">
+              
               <button
-                onClick={close2DView}
-                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                onClick={() => {
+                    handleProjectionChange("Orthographic");
+                    if (navigation === "FirstPerson"){
+                      worldRef.current?.camera.set("Orbit");
+                      setNavigation("Orbit");
+                      handleNavigationChange("Orbit");
+                    }
+                    worldRef.current?.camera.projection.set("Orthographic");
+                    setProjection("Orthographic");                  
+                  }}
+                disabled={projection === "Orthographic"}
+                className={`px-3 py-2 rounded-lg 
+                  ${projection === "Orthographic"
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
               >
-                {isClient ? t("close_2d_view") : "Close 2D View"}
+                {isClient ? t("orthographic") : "Orthographic"}
               </button>
-              {["top", "bottom", "front", "back", "left", "right"].map((o) => (
+            </div>
+          </div>
+
+          <div className={`w-full h-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
+
+          {/* Navigation */}
+          <div className="flex flex-col items-center gap-2">
+            <span className="font-medium">{isClient ? t("navigation_mode") : "Navigation Mode"}</span>
+            <div className="flex gap-2">
+              {(["Orbit", "FirstPerson", "Plan"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => handleNavigationChange(mode)}
+                  disabled={mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")}
+                  className={`px-3 py-2 rounded-lg 
+                    ${mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-purple-600 text-white hover:bg-purple-700"}`}
+                >
+                  {isClient ? t(mode.toLowerCase()) : mode}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={`w-full h-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
+
+          {/* 2D Views */}
+          <div className="flex flex-col items-center gap-2">
+            <span className="font-medium">{isClient ? t("2d_views") : "2D Views"}</span>
+            <div className="grid grid-cols-3 gap-2">
+              {["top", "front", "left", "bottom", "back", "right"].map((o) => (
                 <button
                   key={o}
                   onClick={() => handle2DView(o as any)}
-                  className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-3 py-1 rounded-lg bg-gray-600 text-white hover:bg-gray-700"
                 >
                   {isClient ? t(o) : o.charAt(0).toUpperCase() + o.slice(1)}
                 </button>
               ))}
             </div>
-          )}
+          </div>
+
+          <div className={`w-full h-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
+
+          {/* Fit to Model */}
+          <div className="flex flex-col justify-center items-center gap-2">
+            <button
+              onClick={() => worldRef.current?.camera.fitToItems()}
+              className="px-3 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700"
+            >
+              {isClient ? t("fit_to_model") : "Fit to Model"}
+            </button>
+          </div>
         </div>
-
-        <div className={`w-px ${darkMode ? "bg-white" : "bg-gray-500"} opacity-50`}></div>
-
-        {/* Fit to Model */}
-        <div className="flex flex-col justify-center items-center gap-2">
-          <button
-            onClick={() => worldRef.current?.camera.fitToItems()}
-            className="px-3 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700"
-          >
-            {isClient ? t("fit_to_model") : "Fit to Model"}
-          </button>
-        </div>
-      </div>
-
+      )}
       {/* Navigation Mode Message */}
       {toastMessage && (
         <div
@@ -215,6 +211,6 @@ export default function CameraControls({
           {toastMessage}
         </div>
       )}
-    </>
+    </div>
   );
 }

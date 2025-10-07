@@ -11,7 +11,7 @@ export default function HeaderToggle({ darkMode }: HeaderToggleProps) {
         text-2xl font-semibold mx-auto
         ${darkMode ? "bg-gray-700 text-yellow-200" : "bg-gray-400 text-gray-700"}`}
     >
-      Gomore Ifc Loader
+      Gomore Viewer
     </header>
   );
 }

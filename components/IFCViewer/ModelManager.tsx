@@ -48,7 +48,7 @@ export default function ModelManager({
     <div className="flex flex-col h-full">
       <HeaderToggle darkMode={darkMode} />
 
-      <div className="flex flex-col justify-center items-center gap-2 mt-2">
+      <div className="flex flex-col justify-center items-center gap-2 mt-2 px-4">
         <label
           className={`w-full flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
             ${darkMode ? "bg-blue-800 text-amber-100 hover:bg-blue-900" : "bg-blue-600 text-white hover:bg-blue-700"}`}
@@ -58,14 +58,14 @@ export default function ModelManager({
           </label>
         <label
           className={`w-full flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
-            ${darkMode ? "bg-green-800 text-amber-100 hover:bg-green-900" : "bg-green-600 text-white hover:bg-green-700"}`}
+            ${darkMode ? "bg-gray-700 text-amber-100 hover:bg-gray-800" : "bg-gray-600 text-white hover:bg-gray-700"}`}
           >
             {isClient ? t("upload_fragment") : "Upload Fragment File"}
             <input type="file" accept=".frag" onChange={handleFragmentUpload} className="hidden" />
           </label>
         <label
           className={`w-full flex justify-center items-center font-medium px-6 py-2 rounded-lg cursor-pointer transition-colors duration-200
-            ${darkMode ? "bg-yellow-700 text-amber-100 hover:bg-yellow-800" : "bg-yellow-600 text-white hover:bg-yellow-700"}`}
+            ${darkMode ? "bg-gray-700 text-amber-100 hover:bg-gray-800" : "bg-gray-600 text-white hover:bg-gray-700"}`}
           >
             {isClient ? t("upload_json") : "Upload JSON File"}
             <input type="file" accept=".json" onChange={handleJSONUpload} className="hidden" />

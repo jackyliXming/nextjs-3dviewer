@@ -167,5 +167,8 @@
   "confirm_selection": "確認選取",
   "search_results": "搜尋結果",
   "no_results_yet": "尚無結果。",
-  "element_group": "元素群組 {{count}}"
+  "element_group": "元素群組 {{count}}",
+  "visibility": "可見性",
+  "selection": "選取",
+  "tools": "工具"
 }

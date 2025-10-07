@@ -722,6 +722,18 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
     await hider.set(false);
     await hider.set(true, selection);
   };
+
+  const onFocus = async () => {
+    const camera = worldRef.current?.camera;
+    const highlighter = componentsRef.current?.get(OBCF.Highlighter);
+    if (!camera || !highlighter) return;
+    const selection = highlighter.selection.select;
+    if (Object.keys(selection).length > 0) {
+      await camera.fitToItems(selection, 0.5);
+    } else {
+      await camera.fitToItems();
+    }
+  };
   
   const onShow = async () => {
     const hider = componentsRef.current?.get(OBC.Hider);
@@ -1104,6 +1116,18 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
             />
           </SideBarTab>
         )}
+        {components && worldRef.current && (
+          <SideBarTab name="Collision">
+            <CollisionDetector
+              isOpen={activeTool === 'collision'}
+              onClose={() => setActiveTool(null)}
+              components={components}
+              world={worldRef.current}
+              darkMode={darkMode}
+              categories={categories}
+            />
+          </SideBarTab>
+        )}
         {components && (
           <SideBarTab name="BCF">
             <BCFTopics
@@ -1152,8 +1176,31 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
           uploadedModels={uploadedModels}
         />
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none [&>*]:pointer-events-auto">
-            <ToolBar
+            <CameraControls
               darkMode={darkMode}
+              projection={projection}
+              navigation={navigation}
+              setProjection={setProjection}
+              setNavigation={setNavigation}
+              worldRef={worldRef}
+            />
+
+            {/* {componentsRef.current && fragmentsRef.current && worldRef.current && (
+              <ViewOrientation
+                components={componentsRef.current}
+                fragments={fragmentsRef.current}
+                world={worldRef.current}
+              />
+            )} */}
+
+            <ActionButtons
+              darkMode={darkMode}
+              onToggleVisibility={onToggleVisibility}
+              onIsolate={onIsolate}
+              onFocus={onFocus}
+              onShow={onShow}
+              onGhost={handleGhost}
+              isGhost={isGhost}
               activeTool={activeTool}
               onSelectTool={(tool) => {
                 if (tool === "length") handleLength();
@@ -1162,7 +1209,6 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
                 else if (tool === "colorize") handleColorizeToggle();
                 else if (tool === "collision") {
                   setActiveTool(tool);
-                  setIsCollisionModalOpen(true);
                 } else if (tool === "search") {
                   setActiveTool(tool);
                   setIsSearchOpen(true);
@@ -1177,46 +1223,6 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
               setAreaMode={setAreaMode}
               onColorize={handleColorize}
               onClearColor={handleClearColor}
-            />
-
-            {components && worldRef.current && (
-              <CollisionDetector
-                isOpen={isCollisionModalOpen}
-                onClose={() => {
-                  setIsCollisionModalOpen(false);
-                  setActiveTool(null);
-                }}
-                components={components}
-                world={worldRef.current}
-                darkMode={darkMode}
-                categories={categories}
-              />
-            )}
-
-            <CameraControls
-              darkMode={darkMode}
-              projection={projection}
-              navigation={navigation}
-              setProjection={setProjection}
-              setNavigation={setNavigation}
-              worldRef={worldRef}
-            />
-
-            {componentsRef.current && fragmentsRef.current && worldRef.current && (
-              <ViewOrientation
-                components={componentsRef.current}
-                fragments={fragmentsRef.current}
-                world={worldRef.current}
-              />
-            )}
-
-            <ActionButtons
-              darkMode={darkMode}
-              onToggleVisibility={onToggleVisibility}
-              onIsolate={onIsolate}
-              onShow={onShow}
-              onGhost={handleGhost}
-              isGhost={isGhost}
             />
 
             <LoadingModal darkMode={darkMode} progress={progress} show={showProgressModal} />

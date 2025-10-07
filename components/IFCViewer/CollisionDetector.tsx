@@ -476,20 +476,17 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
     onClose();
   };
 
-  if (!isOpen) return null;
-
   const availableCategoriesA = categories.filter(cat => !selectedCategoriesA.some(sc => sc.name === cat));
   const availableCategoriesB = categories.filter(cat => !selectedCategoriesB.some(sc => sc.name === cat));
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 z-50 flex justify-center items-center">
-      <div className={`p-6 rounded-lg shadow-lg ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} w-full max-w-3xl`}>
+    <div className="flex flex-col h-full">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">{isClient ? t("collision_detection") : "Collision Detection"}</h2>
           <button onClick={handleClose} className="text-2xl font-bold">&times;</button>
         </div>
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             {/* Group A */}
             <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-200"} flex flex-col gap-2`}>
               <h3 className="font-bold">{isClient ? t("group_a") : "Group A"} ({getGroupItemCount(groupA)} {isClient ? t("items") : "items"})</h3>
@@ -609,7 +606,6 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
