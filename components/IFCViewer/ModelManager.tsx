@@ -81,7 +81,7 @@ export default function ModelManager({
 
       <br />
 
-      <h2 className={`text-lg font-semibold mb-4 px-4 ${darkMode ? "text-amber-100" : "text-white"}`}>{isClient ? t("uploaded_models") : "Uploaded Models"}</h2>
+      <h2 className={`text-lg font-semibold mb-4 px-4 ${darkMode ? "text-amber-100" : "text-black"}`}>{isClient ? t("uploaded_models") : "Uploaded Models"}</h2>
 
       <hr />
       <br />
@@ -99,13 +99,13 @@ export default function ModelManager({
                     {isClient ? t("ifc") : "IFC"}
                   </button>
                 <button
-                  className={`${darkMode ? "bg-green-800 text-amber-100 hover:bg-green-900" : "bg-green-600 text-white hover:bg-green-700"} px-2 py-1 rounded text-xs`}
+                  className={`${darkMode ? "bg-gray-700 text-amber-100 hover:bg-gray-800" : "bg-gray-600 text-white hover:bg-gray-700"} px-2 py-1 rounded text-xs`}
                   onClick={() => downloadFragments()}
                 >
                   {isClient ? t("fragment") : "Fragment"}
                 </button>
                 <button
-                  className={`${darkMode ? "bg-yellow-700 text-amber-100 hover:bg-yellow-800" : "bg-yellow-600 text-white hover:bg-yellow-700"} px-2 py-1 rounded text-xs`}
+                  className={`${darkMode ? "bg-gray-700 text-amber-100 hover:bg-gray-800" : "bg-gray-600 text-white hover:bg-gray-700"} px-2 py-1 rounded text-xs`}
                     onClick={() => handleDownloadJSON(model)}
                   >
                     {isClient ? t("json") : "JSON"}

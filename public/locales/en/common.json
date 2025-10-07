@@ -170,5 +170,6 @@
   "element_group": "ELEMENT GROUP {{count}}",
   "visibility": "Visibility",
   "selection": "Selection",
-  "tools": "Tools"
+  "tools": "Tools",
+  "login": "Login"
 }

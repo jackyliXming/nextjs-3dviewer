@@ -170,5 +170,6 @@
   "element_group": "元素群組 {{count}}",
   "visibility": "可見性",
   "selection": "選取",
-  "tools": "工具"
+  "tools": "工具",
+  "login": "登入"
 }

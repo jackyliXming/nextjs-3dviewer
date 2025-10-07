@@ -21,6 +21,9 @@ import SideBar from "@/components/IFCViewer/SideBar";
 import SideBarTab from "@/components/IFCViewer/SideBarTab";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import Link from "next/link";
+import { LogIn } from "lucide-react";
+import { Tooltip } from "@heroui/react";
 
 interface UploadedModel {
   id: string;
@@ -1068,6 +1071,15 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
         onToggle={setIsSidebarOpen}
         themeSwitcher={<ThemeSwitch darkMode={darkMode} toggleTheme={toggleTheme} />}
         languageSwitcher={<LanguageSwitch />}
+        loginButton={
+          <Tooltip content="Login" placement="right">
+            <Link href="/login">
+              <button className="p-3 my-2 rounded-md hover:bg-gray-700">
+                <LogIn size={20} />
+              </button>
+            </Link>
+          </Tooltip>
+        }
       >
         <SideBarTab name="Models">
           <ModelManager

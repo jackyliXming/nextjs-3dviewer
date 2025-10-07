@@ -9,10 +9,11 @@ interface SideBarProps {
   children: React.ReactNode;
   themeSwitcher: React.ReactNode;
   languageSwitcher: React.ReactNode;
+  loginButton: React.ReactNode;
   onToggle: (isOpen: boolean) => void;
 }
 
-const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, languageSwitcher, onToggle }) => {
+const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, languageSwitcher, loginButton, onToggle }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
@@ -51,7 +52,7 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
 
   return (
     <div className="flex h-full">
-      <div className={`flex flex-col justify-between items-center p-2 ${darkMode ? "bg-gray-900" : "bg-indigo-400"} text-white z-30`}>
+      <div className={`flex flex-col justify-between items-center p-2 ${darkMode ? "bg-gray-900 border-r border-gray-700" : "bg-indigo-400 border-r border-indigo-500"} text-white z-30`}>
         <div className="flex flex-col items-center">
           {tabs.map((child) => (
             child.props.name && (
@@ -69,10 +70,11 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
         <div className="flex flex-col items-center space-y-4">
             {themeSwitcher}
             {languageSwitcher}
+            {loginButton}
         </div>
       </div>
       <div
-        className={`transition-all duration-300 ${darkMode ? "bg-neutral-800" : "bg-neutral-200"} ${
+        className={`transition-all duration-300 ${darkMode ? "bg-neutral-800 border-r border-gray-700" : "bg-neutral-200 border-r border-gray-300"} ${
           isOpen ? "w-80 p-4" : "w-0"
         } overflow-y-auto overflow-x-hidden`}
       >
