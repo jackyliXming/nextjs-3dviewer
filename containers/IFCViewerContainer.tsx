@@ -11,7 +11,6 @@ import ModelManager from "@/components/IFCViewer/ModelManager";
 import LoadingModal from "@/components/IFCViewer/LoadingModal";
 import ActionButtons from "@/components/IFCViewer/ActionButtons";
 import CameraControls from "@/components/IFCViewer/CameraControls";
-import ToolBar from "@/components/IFCViewer/ToolBar";
 import Viewpoints from "@/components/IFCViewer/Viewpoints";
 import ViewOrientation from "@/components/IFCViewer/ViewOrientation";
 import BCFTopics from "@/components/IFCViewer/BCFTopics";

@@ -206,7 +206,7 @@ export default function CameraControls({
         <div
           className={`absolute top-12 left-1/2 transform -translate-x-1/2 
             px-6 py-3 rounded-xl bg-black text-white text-lg font-medium 
-            transition-opacity duration-500 ${showToast ? "opacity-80" : "opacity-0"}`}
+            transition-opacity duration-500 ${showToast ? "opacity-70" : "opacity-0"}`}
         >
           {toastMessage}
         </div>
