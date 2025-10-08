@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import * as OBC from "@thatopen/components";
-import { Camera } from "lucide-react";
+import { Camera, Rotate3d, HatGlasses, Hand } from "lucide-react";
+import { Tooltip } from "@heroui/react";
 
 interface CameraControlsProps {
   darkMode: boolean;
@@ -100,16 +101,16 @@ export default function CameraControls({
     <div className="absolute top-4 right-4">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-lg
-          ${darkMode ? "bg-gray-800/50 text-white hover:bg-gray-700/50" : "bg-white/50 text-black hover:bg-gray-200/50"}`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg
+          ${darkMode ? "bg-dark-default-200/70 text-white hover:bg-dark-content4/70" : "bg-white/50 text-black hover:bg-gray-200/50"} transition-colors duration-200`}
       >
         <Camera size={18} />
         <span>Camera</span>
       </button>
       {isExpanded && (
         <div
-          className={`absolute top-full right-0 mt-2 flex flex-col gap-4 p-4 rounded-lg shadow-lg
-            ${darkMode ? "bg-gray-800/80 text-white" : "bg-white/80 text-black"}`}
+          className={`absolute top-full right-0 mt-2 flex flex-col gap-4 p-4 rounded-xl shadow-lg
+            ${darkMode ? "bg-dark-content1/80 text-white" : "bg-white/80 text-black"}`}
         >
           {/* Projection */}
           <div className="flex flex-col items-center gap-2">
@@ -118,10 +119,10 @@ export default function CameraControls({
               <button
                 onClick={() => handleProjectionChange("Perspective")}
                 disabled={projection === "Perspective"}
-                className={`px-3 py-2 rounded-lg 
+                className={`px-3 py-2 rounded-xl transition-colors duration-200
                   ${projection === "Perspective"
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+                    ? (darkMode ? "bg-dark-content4 text-gray-400 cursor-not-allowed" : "bg-gray-400 text-gray-200 cursor-not-allowed")
+                    : (darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus")}`}
               >
                 {isClient ? t("perspective") : "Perspective"}
               </button>
@@ -138,10 +139,10 @@ export default function CameraControls({
                     setProjection("Orthographic");                  
                   }}
                 disabled={projection === "Orthographic"}
-                className={`px-3 py-2 rounded-lg 
+                className={`px-3 py-2 rounded-xl transition-colors duration-200 cursor-pointer
                   ${projection === "Orthographic"
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+                    ? (darkMode ? "bg-dark-content4 text-gray-400 cursor-not-allowed" : "bg-gray-400 text-gray-200 cursor-not-allowed")
+                    : (darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus")}`}
               >
                 {isClient ? t("orthographic") : "Orthographic"}
               </button>
@@ -153,19 +154,22 @@ export default function CameraControls({
           {/* Navigation */}
           <div className="flex flex-col items-center gap-2">
             <span className="font-medium">{isClient ? t("navigation_mode") : "Navigation Mode"}</span>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2 w-full">
               {(["Orbit", "FirstPerson", "Plan"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => handleNavigationChange(mode)}
-                  disabled={mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")}
-                  className={`px-3 py-2 rounded-lg 
-                    ${mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-purple-600 text-white hover:bg-purple-700"}`}
-                >
-                  {isClient ? t(mode.toLowerCase()) : mode}
-                </button>
+                <Tooltip key={mode} content={isClient ? t(mode.toLowerCase()) : mode} placement="top">
+                  <button
+                    onClick={() => handleNavigationChange(mode)}
+                    disabled={mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")}
+                    className={`p-2 rounded-xl flex justify-center items-center transition-colors duration-200 cursor-pointer
+                      ${mode === navigation || (mode === "FirstPerson" && projection === "Orthographic")
+                        ? (darkMode ? "bg-dark-content4 text-gray-400 cursor-not-allowed" : "bg-gray-400 text-gray-200 cursor-not-allowed")
+                        : (darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus")}`}
+                  >
+                    {mode === "Orbit" && <Rotate3d size={20} />}
+                    {mode === "FirstPerson" && <HatGlasses size={20} />}
+                    {mode === "Plan" && <Hand size={20} />}
+                  </button>
+                </Tooltip>
               ))}
             </div>
           </div>
@@ -180,7 +184,7 @@ export default function CameraControls({
                 <button
                   key={o}
                   onClick={() => handle2DView(o as any)}
-                  className="px-3 py-1 rounded-lg bg-gray-600 text-white hover:bg-gray-700"
+                  className={`px-3 py-1 rounded-xl cursor-pointer ${darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus"} transition-colors duration-200`}
                 >
                   {isClient ? t(o) : o.charAt(0).toUpperCase() + o.slice(1)}
                 </button>
@@ -194,7 +198,7 @@ export default function CameraControls({
           <div className="flex flex-col justify-center items-center gap-2">
             <button
               onClick={() => worldRef.current?.camera.fitToItems()}
-              className="px-3 py-2 rounded-lg bg-pink-600 text-white hover:bg-pink-700"
+              className={`px-3 py-2 rounded-xl cursor-pointer ${darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus"} transition-colors duration-200`}
             >
               {isClient ? t("fit_to_model") : "Fit to Model"}
             </button>

@@ -102,9 +102,9 @@ const SearchResultsPanel: React.FC<SearchResultsPanelProps> = ({
           <p className="text-gray-500">{t("no_results_yet")}</p>
         ) : (
           resultGroups.map((group) => (
-            <div key={group.id} className={`border rounded-md ${darkMode ? "border-gray-700" : "border-gray-600"}`}>
+            <div key={group.id} className={`border rounded-xl ${darkMode ? "border-gray-700" : "border-gray-600"}`}>
               <div
-                className={`flex items-center justify-between p-2 rounded-t-md cursor-pointer ${darkMode ? "bg-gray-800" : "bg-gray-700"}`}
+                className={`flex items-center justify-between p-2 rounded-t-xl cursor-pointer ${darkMode ? "bg-gray-800" : "bg-gray-700"}`}
                 onClick={() => toggleGroupCollapse(group.id)}
               >
                 <div className="flex items-center flex-grow">

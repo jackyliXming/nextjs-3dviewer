@@ -95,9 +95,9 @@ export default function IFCInfoPanel({
               <ul className="space-y-1">
                 {Object.entries(filteredAttrs).map(([key, val]) => (
                   <li key={key} className="flex justify-between border-b border-gray-600/30 pb-1">
-                    <span className={`flex items-center gap-2 px-3 py-2 rounded-lg ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-600 hover:bg-blue-700"} text-white`}>{key}</span>
+                    <span className={`flex items-center gap-2 px-3 py-2 rounded-xl ${darkMode ? "bg-blue-800 hover:bg-blue-900" : "bg-blue-600 hover:bg-blue-700"} text-white`}>{key}</span>
                     <span className="flex items-center px-2 py-1">{String(val?.value ?? "")}</span>
-                    {val?.type && <span className={`flex items-center gap-2 px-2 py-2 rounded-lg text-gray-400 ml-2 ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}>({val.type})</span>}
+                    {val?.type && <span className={`flex items-center gap-2 px-2 py-2 rounded-xl text-gray-400 ml-2 ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}>({val.type})</span>}
                   </li>
                 ))}
               </ul>
@@ -115,7 +115,7 @@ export default function IFCInfoPanel({
                   <ul className={`text-xs ${darkMode ? "bg-gray-800" : "bg-gray-100"} rounded p-2 space-y-1`}>
                     {Object.entries(props as Record<string, any>).map(([propKey, value]) => (
                       <li key={propKey} className="flex justify-between border-b border-gray-600/30 pb-1">
-                        <span className={`flex items-center gap-2 px-4 py-2 rounded-lg ${darkMode ? "bg-green-800 hover:bg-green-900" : "bg-green-600 hover:bg-green-700"} text-white`}>{propKey}</span>
+                        <span className={`flex items-center gap-2 px-4 py-2 rounded-xl ${darkMode ? "bg-green-800 hover:bg-green-900" : "bg-green-600 hover:bg-green-700"} text-white`}>{propKey}</span>
                         <span className="flex items-center px-2">{String(value)}</span>
                       </li>
                     ))}

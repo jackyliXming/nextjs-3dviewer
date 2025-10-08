@@ -2,18 +2,20 @@
 
 import React from "react";
 import { Input, Button } from "@heroui/react";
-import { Mail, Lock, User } from "lucide-react";
-import Link from "next/link";
+import { Mail, Lock, User, X } from "lucide-react";
 
-export default function RegisterPage() {
+interface RegisterModalProps {
+  onClose: () => void;
+  onSwitchToLogin: () => void;
+}
+
+export default function RegisterModal({ onClose, onSwitchToLogin }: RegisterModalProps) {
   return (
-    <div className="relative flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <div className="absolute top-4 right-4">
-        <Link href="/">
-          <Button color="primary">Back to Viewer</Button>
-        </Link>
-      </div>
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-lg dark:bg-gray-800">
+    <div className="fixed inset-0 bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg dark:bg-gray-800 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <X size={24} />
+        </button>
         <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white">Create an Account</h1>
         <form className="space-y-6">
           <Input
@@ -45,9 +47,9 @@ export default function RegisterPage() {
         <div className="text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-blue-600 hover:underline dark:text-blue-500">
+            <button onClick={onSwitchToLogin} className="font-medium text-blue-600 hover:underline dark:text-blue-500">
               Log in
-            </Link>
+            </button>
           </p>
         </div>
       </div>

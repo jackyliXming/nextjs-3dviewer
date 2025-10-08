@@ -488,7 +488,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4">
             {/* Group A */}
-            <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-200"} flex flex-col gap-2`}>
+            <div className={`p-4 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-200"} flex flex-col gap-2`}>
               <h3 className="font-bold">{isClient ? t("group_a") : "Group A"} ({getGroupItemCount(groupA)} {isClient ? t("items") : "items"})</h3>
               <div className="flex flex-col gap-1 text-sm">
                 {selectedCategoriesA.map(sc => (
@@ -530,7 +530,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
             </div>
 
             {/* Group B */}
-            <div className={`p-4 rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-200"} flex flex-col gap-2`}>
+            <div className={`p-4 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-200"} flex flex-col gap-2`}>
               <h3 className="font-bold">{isClient ? t("group_b") : "Group B"} ({getGroupItemCount(groupB)} {isClient ? t("items") : "items"})</h3>
               <div className="flex flex-col gap-1 text-sm">
                 {selectedCategoriesB.map(sc => (
@@ -583,8 +583,8 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
           {isLoading && (
             <div>
               <p className="text-sm text-center mb-1">{status}</p>
-              <div className="w-full bg-gray-600 rounded-full h-2.5">
-                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+              <div className="w-full bg-gray-600 rounded-xl h-2.5">
+                <div className="bg-blue-600 h-2.5 rounded-xl" style={{ width: `${progress}%` }}></div>
               </div>
               <p className="text-sm text-center mt-1">{itemsProcessed} / {totalItems}</p>
             </div>

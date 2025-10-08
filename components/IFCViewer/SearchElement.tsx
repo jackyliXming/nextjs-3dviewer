@@ -262,7 +262,7 @@ const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMod
   return (
     <div className="flex flex-col h-full">
         {notification && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg z-10">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 bg-red-500 text-white px-4 py-2 rounded-xl shadow-lg z-10">
             {notification}
           </div>
         )}
@@ -356,7 +356,7 @@ const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMod
               <Plus size={18} className="mr-1" />
               {isClient ? t("add_condition") : "Add Condition"}
             </button>
-            <button onClick={handleSearch} disabled={isSearching} className={`p-2 px-4 rounded-full flex items-center gap-2 ${darkMode ? "bg-green-600 hover:bg-green-700" : "bg-green-500 hover:bg-green-600"} text-white disabled:bg-gray-400`}>
+            <button onClick={handleSearch} disabled={isSearching} className={`p-2 px-4 rounded-xl flex items-center gap-2 ${darkMode ? "bg-green-600 hover:bg-green-700" : "bg-green-500 hover:bg-green-600"} text-white disabled:bg-gray-400`}>
               {isSearching ? <Spinner size="sm" /> : <Search size={18} />}
               {isSearching ? (isClient ? t("searching") : "Searching...") : (isClient ? t("search") : "Search")}
             </button>

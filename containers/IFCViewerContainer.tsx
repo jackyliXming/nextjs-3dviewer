@@ -24,6 +24,9 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 import { Tooltip } from "@heroui/react";
+import DescriptionPanel from "@/components/IFCViewer/DescriptionPanel";
+import LoginModal from "@/components/LoginModal";
+import RegisterModal from "@/components/RegisterModal";
 
 interface UploadedModel {
   id: string;
@@ -81,10 +84,12 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
   const [navigation, setNavigation] = useState<"Orbit" | "FirstPerson" | "Plan">("Orbit");
   const [isGhost, setIsGhost] = useState(false);
   const [bcfMode, setBcfMode] = useState(false);
-  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | "colorize" | "collision" | "search" | null>(null);  
+  const [activeTool, setActiveTool] = useState<"clipper" | "length" | "area" | "colorize" | "collision" | "search" | null>(null);
+  const [originalSelectStyle, setOriginalSelectStyle] = useState<any>(null);
   const [lengthMode, setLengthMode] = useState<"free" | "edge">("free");
   const [areaMode, setAreaMode] = useState<"free" | "square">("free");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [showDescriptionPanel, setShowDescriptionPanel] = useState(false);
   const [currentViewpoint, setCurrentViewpoint] = useState<OBC.Viewpoint | null>(null);
   const [storedViews, setStoredViews] = useState<StoredViewpoint[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -95,8 +100,11 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
   const [activeAddGroupId, setActiveAddGroupId] = useState<number | null>(null);
   const [resultGroups, setResultGroups] = useState<TResultGroup[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const isAddingToGroupRef = useRef(isAddingToGroup);
   const activeAddGroupIdRef = useRef(activeAddGroupId);
+  const activeToolRef = useRef(activeTool);
 
   const [selectedColor, setSelectedColor] = useState<string>("#ffa500");
   const selectedColorRef = useRef(selectedColor);
@@ -115,6 +123,10 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
     isAddingToGroupRef.current = isAddingToGroup;
     activeAddGroupIdRef.current = activeAddGroupId;
   }, [isAddingToGroup, activeAddGroupId]);
+
+  useEffect(() => {
+    activeToolRef.current = activeTool;
+  }, [activeTool]);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -190,6 +202,24 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
       highlighterRef.current = highlighter;
 
       highlighter.events.select.onHighlight.add(async (selection) => {
+        if (activeToolRef.current === "colorize") {
+          const highlighter = highlighterRef.current;
+          if (!highlighter) return;
+          const color = selectedColorRef.current;
+          const styleID = `colorize-${color}`;
+          if (!highlighter.styles.has(styleID)) {
+            highlighter.styles.set(styleID, {
+              color: new Color(color),
+              opacity: 1,
+              transparent: false,
+              renderedFaces: FRAGS.RenderedFaces.ONE,
+            });
+          }
+          await highlighter.highlightByID(styleID, selection, false);
+          await highlighter.clear("select");
+          return;
+        }
+
         const fragmentId = Object.keys(selection)[0];
         if (!fragmentId) {
           if (!isAddingToGroupRef.current) {
@@ -257,14 +287,6 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
         }
       });
 
-      if (!highlighter.styles.has("colorize")) {
-        highlighter.styles.set("colorize", {
-          color: new Color(selectedColorRef.current),
-          opacity: 1,
-          transparent: false,
-          renderedFaces: FRAGS.RenderedFaces.ONE,
-        });
-      }
 
       components.get(OBC.Hider);
 
@@ -356,6 +378,15 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
 
     const highlighter = componentsRef.current?.get(OBCF.Highlighter);
 
+    if (highlighter && originalSelectStyle) {
+      const style = highlighter.styles.get("select");
+      if (style) {
+        style.color.set(originalSelectStyle.color);
+        style.opacity = originalSelectStyle.opacity;
+      }
+      setOriginalSelectStyle(null);
+    }
+
     switch (activeTool) {
       case "length":
         measurerRef.current.enabled = true;
@@ -371,7 +402,15 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
         break;
       case "colorize":
         colorizeRef.current.enabled = true;
-        if (highlighter) highlighter.enabled = false;
+        if (highlighter) {
+          highlighter.enabled = true;
+          highlighter.zoomToSelection = false;
+          const style = highlighter.styles.get("select");
+          if (style) {
+            setOriginalSelectStyle({ color: style.color.clone(), opacity: style.opacity });
+            style.opacity = 0;
+          }
+        }
         break;
       case "collision":
         setIsCollisionModalOpen(true);
@@ -381,10 +420,12 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
         setIsSearchOpen(true);
         break;
       default:
-        if (highlighter) highlighter.enabled = true;
+        if (highlighter) {
+          highlighter.enabled = true;
+          highlighter.zoomToSelection = true;
+        }
         break;
     }
-
   }, [activeTool]);
 
   useEffect(() => {
@@ -401,14 +442,6 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
 
   useEffect(() => {
     selectedColorRef.current = selectedColor;
-    // Also update the highlighter style when the color changes
-    if (componentsRef.current) {
-      const highlighter = componentsRef.current.get(OBCF.Highlighter);
-      if (highlighter.styles.has("colorize")) {
-        const style = highlighter.styles.get("colorize") as any; // Use 'any' to bypass the incorrect type
-        style.color.set(selectedColor);
-      }
-    }
   }, [selectedColor]);
 
   useEffect(() => {
@@ -809,50 +842,38 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
 
   const handleClipper = () => {
     if (!clipperRef.current) return;
-
-    const isActive = activeTool === "clipper";
-    setActiveTool(isActive ? null : "clipper");
-
-    clipperRef.current.enabled = !isActive;
-
-    if (measurerRef.current) 
-      measurerRef.current.list.clear();
-    if (areaMeasurerRef.current) 
-      areaMeasurerRef.current.list.clear();
-    if (isActive) 
+    if (activeTool === "clipper") {
       clipperRef.current.list.clear();
+      setActiveTool(null);
+    } else {
+      if (measurerRef.current) measurerRef.current.list.clear();
+      if (areaMeasurerRef.current) areaMeasurerRef.current.list.clear();
+      setActiveTool("clipper");
+    }
   };
 
   const handleLength = () => {
     if (!measurerRef.current) return;
-
-    const isActive = activeTool === "length";
-    setActiveTool(isActive ? null : "length");
-
-    measurerRef.current.enabled = !isActive;
-
-    if (clipperRef.current) 
-      clipperRef.current.list.clear();
-    if (areaMeasurerRef.current) 
-      areaMeasurerRef.current.list.clear();  
-    if (isActive) 
+    if (activeTool === "length") {
       measurerRef.current.list.clear();
+      setActiveTool(null);
+    } else {
+      if (clipperRef.current) clipperRef.current.list.clear();
+      if (areaMeasurerRef.current) areaMeasurerRef.current.list.clear();
+      setActiveTool("length");
+    }
   };
 
   const handleArea = () => {
     if (!areaMeasurerRef.current) return;
-
-    const isActive = activeTool === "area";
-    setActiveTool(isActive ? null : "area");
-
-    areaMeasurerRef.current.enabled = !isActive;
-
-    if (clipperRef.current) 
-      clipperRef.current.list.clear();
-    if (measurerRef.current)
-      measurerRef.current.list.clear();
-    if (isActive) 
+    if (activeTool === "area") {
       areaMeasurerRef.current.list.clear();
+      setActiveTool(null);
+    } else {
+      if (clipperRef.current) clipperRef.current.list.clear();
+      if (measurerRef.current) measurerRef.current.list.clear();
+      setActiveTool("area");
+    }
   };
 
   const deleteSelectedModel = (model: UploadedModel) => {
@@ -1001,19 +1022,6 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
     setSelectedColor(color);
   };
 
-  const handleClickColorizeElement = async (modelId: string, localId: number) => {
-    if (!componentsRef.current || !colorizeRef.current.enabled) return;
-
-    const highlighter = componentsRef.current.get(OBCF.Highlighter);
-
-    const modelIdMap: Record<string, Set<number>> = {
-      [modelId]: new Set([localId]),
-    };
-
-    // Use the standard highlighter component instead of the low-level one
-    await highlighter.highlightByID("colorize", modelIdMap, true);
-  };
-
   const handleColorizeToggle = () => {
     if (!componentsRef.current || !fragmentsRef.current) return;
 
@@ -1033,7 +1041,18 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
   const handleClearColor = async () => {
     if (!componentsRef.current) return;
     const highlighter = componentsRef.current.get(OBCF.Highlighter);
-    await highlighter.clear("colorize");
+    const styles = highlighter.styles;
+    const stylesToClear: string[] = [];
+    for (const [styleName] of styles) {
+      if (styleName.startsWith("colorize-")) {
+        stylesToClear.push(styleName);
+      }
+    }
+
+    for (const styleName of stylesToClear) {
+      await highlighter.clear(styleName);
+      styles.delete(styleName);
+    }
   };
 
   const goToTopicViewpoint = async (topic: OBC.Topic) => {
@@ -1069,15 +1088,15 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
       <SideBar
         darkMode={darkMode}
         onToggle={setIsSidebarOpen}
+        onToggleDescription={() => setShowDescriptionPanel(!showDescriptionPanel)}
+        isDescriptionOpen={showDescriptionPanel}
         themeSwitcher={<ThemeSwitch darkMode={darkMode} toggleTheme={toggleTheme} />}
         languageSwitcher={<LanguageSwitch />}
         loginButton={
           <Tooltip content="Login" placement="right">
-            <Link href="/login">
-              <button className="p-3 my-2 rounded-md hover:bg-gray-700">
-                <LogIn size={20} />
-              </button>
-            </Link>
+            <button onClick={() => setShowLoginModal(true)} className="p-3 my-2 rounded-xl hover:bg-gray-700">
+              <LogIn size={20} />
+            </button>
           </Tooltip>
         }
       >
@@ -1180,12 +1199,37 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
         />
       )}
 
+      {showLoginModal && (
+        <LoginModal
+          onClose={() => setShowLoginModal(false)}
+          onSwitchToRegister={() => {
+            setShowLoginModal(false);
+            setShowRegisterModal(true);
+          }}
+        />
+      )}
+
+      {showRegisterModal && (
+        <RegisterModal
+          onClose={() => setShowRegisterModal(false)}
+          onSwitchToLogin={() => {
+            setShowRegisterModal(false);
+            setShowLoginModal(true);
+          }}
+        />
+      )}
+
       <div className="relative flex-grow transition-all duration-300 min-w-0">
         <IFCViewerUI
           darkMode={darkMode}
           viewerRef={viewerRef}
           uploadedModels={uploadedModels}
         />
+        {showDescriptionPanel && (
+          <div className="absolute bottom-4 right-4 w-80 z-10">
+            <DescriptionPanel darkMode={darkMode} activeTool={activeTool} />
+          </div>
+        )}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none [&>*]:pointer-events-auto">
             <CameraControls
               darkMode={darkMode}
