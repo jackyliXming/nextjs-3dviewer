@@ -371,7 +371,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
           <div className="flex gap-2 mb-2">
             {!bcfMode ? (
               <button
-                className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-2 py-1 rounded`}
+                className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-2 py-1 rounded`}
                 onClick={handleEnterBcfMode}
               >
                 {isClient ? t("create") : "Create"}
@@ -379,13 +379,13 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
             ) : (
               <>
                 <button
-                  className={`${darkMode ? "bg-green-700 hover:bg-green-800" : "bg-green-800 hover:bg-green-900"} text-amber-100 px-2 py-1 rounded`}
+                  className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-2 py-1 rounded`}
                   onClick={handleConfirmBcfCreation}
                 >
                   {isClient ? t("confirm_selection") : "Confirm"}
                 </button>
                 <button
-                  className={`${darkMode ? "bg-red-700 hover:bg-red-800" : "bg-red-800 hover:bg-red-900"} text-amber-100 px-2 py-1 rounded`}
+                  className={`${darkMode ? "bg-custom-gomorered-600 hover:bg-custom-gomorered-700" : "bg-custom-gomorered-500 hover:bg-custom-gomorered-600"} text-amber-100 px-2 py-1 rounded`}
                   onClick={handleCancelBcfCreation}
                 >
                   {isClient ? t("cancel") : "Cancel"}
@@ -393,14 +393,14 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
               </>
             )}
             <button
-              className={`${darkMode ? "bg-green-700 hover:bg-green-800" : "bg-green-800 hover:bg-green-900"} text-amber-100 px-2 py-1 rounded ${!selectedTopic ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-2 py-1 rounded ${!selectedTopic ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={downloadBCF}
               disabled={!selectedTopic}
             >
               {isClient ? t("export") : "Export"}
             </button>
             <button
-              className={`${darkMode ? "bg-yellow-600 hover:bg-yellow-700" : "bg-yellow-700 hover:bg-yellow-800"} text-amber-100 px-2 py-1 rounded`}
+              className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-2 py-1 rounded`}
               onClick={loadBCF}
             >
               {isClient ? t("load") : "Load"}
@@ -409,7 +409,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
 
           <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
             {/* Topics List */}
-            <div className={`flex-1 overflow-y-auto border ${darkMode ? "border-gray-600" : "border-gray-300"} p-1`}>
+            <div className={`flex-1 overflow-y-auto border ${darkMode ? "border-zinc-600" : "border-zinc-400"} p-1`}>
               <h5 className="font-semibold mb-1 fixed">{isClient ? t("topics") : "Topics"}</h5>
               <br/>
               <ul>
@@ -421,13 +421,13 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
                       handleTopicClick(topic);
                     }}
                     className={`cursor-pointer p-1 flex justify-between items-center ${
-                      selectedTopic?.guid === topic.guid ? (darkMode ? "bg-gray-600" : "bg-gray-200") : ""
+                      selectedTopic?.guid === topic.guid ? (darkMode ? "bg-zinc-600" : "bg-zinc-300") : ""
                     }`}
                   >
                     <span className="truncate" title={topic.title}>{topic.title}</span>
                     <button
                       onClick={(e) => deleteTopic(e, topic.guid)}
-                      className="text-red-500 hover:text-red-700 font-bold px-2"
+                      className="text-custom-gomorered-400 hover:text-custom-gomorered-500 font-bold px-2"
                     >
                       X
                     </button>
@@ -437,14 +437,14 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
             </div>
 
             {/* Topic Details */}
-            <div className={`flex-1 overflow-y-auto border ${darkMode ? "border-gray-600" : "border-gray-300"} p-1`}>
+            <div className={`flex-1 overflow-y-auto border ${darkMode ? "border-zinc-600" : "border-zinc-400"} p-1`}>
               <div className="flex justify-between items-center">
                 <h5 className="font-semibold mb-1">{isClient ? t("details") : "Details"}</h5>
                 {selectedTopic && (
                   <div className="flex gap-2">
                   <button
                     onClick={() => setEditModalOpen(true)}
-                    className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                    className="bg-primary text-white px-2 py-1 rounded text-xs"
                   >
                     {isClient ? t("edit") : "Edit"}
                   </button>
@@ -466,7 +466,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
                   <div className="flex justify-end mt-2">
                     <button
                       onClick={() => setHistoryModalOpen(true)}
-                      className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
+                      className="bg-zinc-500 text-white px-2 py-1 rounded text-xs"
                     >
                       {isClient ? t("history") : "History"}
                     </button>
@@ -475,10 +475,10 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
                     <h6 className="font-semibold mb-2">{isClient ? t("comments") : "Comments"}</h6>
                     <div className="space-y-2 max-h-40 overflow-y-auto mb-2">
                       {selectedTopic.comments && Array.from(selectedTopic.comments.values()).map(comment => (
-                        <div key={comment.guid} className={`p-2 rounded ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                        <div key={comment.guid} className={`p-2 rounded ${darkMode ? "bg-zinc-500" : "bg-zinc-300"}`}>
                           <p className="font-bold">{comment.author}</p>
                           <p>{comment.comment}</p>
-                          <p className="text-xs text-gray-400">{new Date(comment.date).toLocaleString()}</p>
+                          <p className="text-xs text-zinc-400">{new Date(comment.date).toLocaleString()}</p>
                         </div>
                       ))}
                     </div>
@@ -489,17 +489,17 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
                           placeholder={isClient ? t("your_name") : "Your name"}
                           value={newComment.name}
                           onChange={(e) => setNewComment({ ...newComment, name: e.target.value })}
-                          className={`w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
+                          className={`w-full border ${darkMode ? "bg-zinc-700 border-zinc-500" : "bg-zinc-50 border-zinc-300"} rounded-xl shadow-sm p-2`}
                           required
                         />
                         <textarea
                           placeholder={isClient ? t("add_a_comment") : "Add a comment..."}
                           value={newComment.comment}
                           onChange={(e) => setNewComment({ ...newComment, comment: e.target.value })}
-                          className={`w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
+                          className={`w-full border ${darkMode ? "bg-zinc-700 border-zinc-500" : "bg-zinc-50 border-zinc-300"} rounded-xl shadow-sm p-2`}
                           required
                         />
-                        <button type="submit" className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded self-end`}>
+                        <button type="submit" className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded self-end`}>
                           {isClient ? t("add_comment") : "Add Comment"}
                         </button>
                       </div>
@@ -623,7 +623,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
 
   return (
     <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50" onMouseDown={(e) => e.stopPropagation()}>
-      <div className={`${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} p-4 rounded-xl shadow-lg w-1/3`}>
+      <div className={`${darkMode ? "bg-gray-800 text-white" : "bg-zinc-50 text-black"} p-4 rounded-xl shadow-lg w-1/3`}>
         <h3 className="text-lg font-bold mb-4">{isClient ? t("new_topic") : "New Topic"}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -636,7 +636,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
               className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
               required
             />
-            {titleExists && <p className="text-red-500 text-xs mt-1">{isClient ? t("topic_title_exists") : "A topic with this title already exists."}</p>}
+            {titleExists && <p className="text-custom-gomorered-500 text-xs mt-1">{isClient ? t("topic_title_exists") : "A topic with this title already exists."}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -649,7 +649,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="type" value={formData.type} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -668,7 +668,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="priority" value={formData.priority} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -689,7 +689,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="labels" value={formData.labels} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -709,7 +709,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="assignedTo" value={formData.assignedTo} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -744,7 +744,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="stage" value={formData.stage} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -766,7 +766,7 @@ const CreateTopicModal = ({ onClose, onSubmit, bcfTopics, darkMode, topicsList }
           </div>
           <div className="flex justify-center gap-2">
             <button type="button" onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">{isClient ? t("cancel") : "Cancel"}</button>
-            <button type="submit" className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded ${titleExists ? "opacity-50 cursor-not-allowed" : ""}`} disabled={titleExists}>{isClient ? t("add_topic") : "Add Topic"}</button>
+            <button type="submit" className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded ${titleExists ? "opacity-50 cursor-not-allowed" : ""}`} disabled={titleExists}>{isClient ? t("add_topic") : "Add Topic"}</button>
           </div>
         </form>
       </div>
@@ -837,7 +837,7 @@ const EditTopicModal = ({ onClose, onSubmit, bcfTopics, topic, darkMode }: any) 
 
   return (
     <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50" onMouseDown={(e) => e.stopPropagation()}>
-      <div className={`${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} p-4 rounded-xl shadow-lg w-1/3`}>
+      <div className={`${darkMode ? "bg-gray-800 text-white" : "bg-zinc-50 text-black"} p-4 rounded-xl shadow-lg w-1/3`}>
         <h3 className="text-lg font-bold mb-4">{isClient ? t("edit_topic") : "Edit Topic"}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -862,7 +862,7 @@ const EditTopicModal = ({ onClose, onSubmit, bcfTopics, topic, darkMode }: any) 
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="type" value={formData.type} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -881,7 +881,7 @@ const EditTopicModal = ({ onClose, onSubmit, bcfTopics, topic, darkMode }: any) 
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="priority" value={formData.priority} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -902,7 +902,7 @@ const EditTopicModal = ({ onClose, onSubmit, bcfTopics, topic, darkMode }: any) 
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="labels" value={formData.labels} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -922,7 +922,7 @@ const EditTopicModal = ({ onClose, onSubmit, bcfTopics, topic, darkMode }: any) 
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="assignedTo" value={formData.assignedTo} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -957,7 +957,7 @@ const EditTopicModal = ({ onClose, onSubmit, bcfTopics, topic, darkMode }: any) 
                     onChange={(e) => setNewOption(e.target.value)}
                     className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}
                   />
-                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
+                  <button type="button" onClick={handleAddNewOption} className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("add") : "Add"}</button>
                 </div>
               ) : (
                 <select name="stage" value={formData.stage} onChange={handleChange} className={`mt-1 block w-full border ${darkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"} rounded-xl shadow-sm p-2`}>
@@ -979,7 +979,7 @@ const EditTopicModal = ({ onClose, onSubmit, bcfTopics, topic, darkMode }: any) 
           </div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">{isClient ? t("cancel") : "Cancel"}</button>
-            <button type="submit" className={`${darkMode ? "bg-blue-700 hover:bg-blue-800" : "bg-blue-800 hover:bg-blue-900"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("save_changes") : "Save Changes"}</button>
+            <button type="submit" className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded`}>{isClient ? t("save_changes") : "Save Changes"}</button>
           </div>
         </form>
       </div>
@@ -1052,7 +1052,7 @@ const HistoryModal = ({ onClose, topic, darkMode }: any) => {
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div
-        className={`${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"} p-4 rounded-xl shadow-lg w-1/2 max-h-[80vh] overflow-y-auto`}
+        className={`${darkMode ? "bg-gray-800 text-white" : "bg-zinc-50 text-black"} p-4 rounded-xl shadow-lg w-1/2 max-h-[80vh] overflow-y-auto`}
       >
         <h3 className="text-lg font-bold mb-4">{isClient ? t("history_title", { title: topic.title }) : `History - ${topic.title}`}</h3>
 
@@ -1091,8 +1091,8 @@ const HistoryModal = ({ onClose, topic, darkMode }: any) => {
                         {diffs.map((d, i) => (
                           <tr key={i}>
                             <td className="p-1 font-semibold">{d.key}</td>
-                            <td className="p-1 text-red-500">{formatValue(d.before)}</td>
-                            <td className="p-1 text-green-500">{formatValue(d.after)}</td>
+                            <td className="p-1 text-custom-gomorered-400">{formatValue(d.before)}</td>
+                            <td className="p-1 text-success-400">{formatValue(d.after)}</td>
                           </tr>
                         ))}
                       </tbody>

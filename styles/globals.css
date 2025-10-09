@@ -21,3 +21,7 @@
   background-color: rgba(0, 153, 255, 0.2);
   pointer-events: none;
 }
+
+.dark .dark-mode-svg {
+  filter: brightness(0) invert(1);
+}

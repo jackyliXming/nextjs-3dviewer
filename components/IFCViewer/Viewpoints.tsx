@@ -91,7 +91,7 @@ export default function Viewpoints({
       <h2 className="text-lg font-bold mb-2">{isClient ? t("viewpoints") : "Viewpoints"}</h2>
 
       <button
-        className="w-full py-2 mb-2 bg-blue-600 text-white rounded"
+        className={`w-full py-2 mb-2 rounded cursor-pointer text-white ${darkMode ? 'bg-dark-primary hover:bg-dark-focus' : 'bg-light-primary hover:bg-light-focus'}`}
         onClick={handleAddViewpoint}
       >
         {isClient ? t("create_viewpoint") : "Create Viewpoint"}
@@ -100,7 +100,7 @@ export default function Viewpoints({
       {currentView && (
         <div className="mb-2 flex flex-col gap-1">
           <button
-            className="py-1 bg-indigo-600 text-white rounded"
+            className={`py-1 rounded cursor-pointer text-white ${darkMode ? 'bg-dark-primary hover:bg-dark-focus' : 'bg-light-primary hover:bg-light-focus'}`}
             onClick={async () => {
               await updateViewpointCamera(currentView.viewpoint);
               await refreshSnapshot(currentView);
@@ -109,7 +109,7 @@ export default function Viewpoints({
             {isClient ? t("update_camera_snapshot") : "Update Camera & Snapshot"}
           </button>
           <button
-            className="py-1 bg-purple-600 text-white rounded"
+            className={`py-1 rounded cursor-pointer text-white ${darkMode ? 'bg-custom-purple-600 hover:bg-custom-purple-700' : 'bg-custom-purple-500 hover:bg-custom-purple-600'}`}
             onClick={() => setWorldCamera(currentView.viewpoint)}
           >
             {isClient ? t("set_world_camera") : "Set World Camera"}
@@ -124,8 +124,8 @@ export default function Viewpoints({
             key={view.id}
             className={`p-2 border rounded cursor-pointer ${
               currentView?.id === view.id
-                ? "border-blue-500 bg-blue-100 dark:bg-blue-200"
-                : "border-gray-300 dark:border-gray-600"
+                ? (darkMode ? "border-dark-focus bg-dark-content2" : "border-light-focus bg-light-content2")
+                : (darkMode ? "border-dark-divider" : "border-light-divider")
             }`}
             onClick={() => selectViewpoint(view)}
           >
@@ -139,10 +139,10 @@ export default function Viewpoints({
                 type="text"
                 value={view.title}
                 onChange={e => renameViewpoint(view.id, e.target.value)}
-                className="border rounded p-1 text-sm flex-1 w-22"
+                className={`border rounded p-1 text-sm flex-1 w-22 ${darkMode ? 'bg-dark-content3 text-white' : 'bg-light-content3 text-black'}`}
               />
               <button
-                className="text-red-500 font-bold ml-2 hover:bg-gray-200"
+                className={`font-bold ml-2 ${darkMode ? 'text-dark-danger hover:bg-dark-content3' : 'text-light-danger hover:bg-light-content3'}`}
                 onClick={e => {
                   e.stopPropagation();
                   deleteViewpoint(view.id);

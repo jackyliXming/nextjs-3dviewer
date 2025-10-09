@@ -262,13 +262,13 @@ const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMod
   return (
     <div className="flex flex-col h-full">
         {notification && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 bg-red-500 text-white px-4 py-2 rounded-xl shadow-lg z-10">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 mt-2 bg-custom-red-500 text-white px-4 py-2 rounded-xl shadow-lg z-10">
             {notification}
           </div>
         )}
         <div className="handle flex items-center justify-between mb-2 cursor-move">
           <h3 className="text-2xl font-semibold">{isClient ? t("search_elements") : "Search Elements"}</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-300" aria-label="Close search panel">
+          <button onClick={onClose} className="p-1 rounded hover:bg-custom-zinc-600" aria-label="Close search panel">
             <X size={18} />
           </button>
         </div>
@@ -280,29 +280,29 @@ const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMod
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-semibold">{isClient ? t("condition") : "Condition"} {index + 1}</span>
                   {queryRows.length > 1 && (
-                    <button onClick={() => handleRemoveRow(row.id)} className="p-1 text-red-500 hover:text-red-700">
+                    <button onClick={() => handleRemoveRow(row.id)} className="p-1 text-custom-red-500 hover:text-custom-red-700">
                       <Trash2 size={16} />
                     </button>
                   )}
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">{isClient ? t("logic") : "Logic"}</label>
+                    <label className={`text-sm font-medium ${darkMode ? "text-custom-zinc-400" : "text-custom-zinc-600"}`}>{isClient ? t("logic") : "Logic"}</label>
                     <select
                       value={row.logic}
                       onChange={(e) => handleRowChange(row.id, { logic: e.target.value as "AND" | "NOT" })}
-                      className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"}`}
+                      className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-custom-zinc-600 text-white border-gray-600" : "bg-light-background text-gray-900 border-gray-300"}`}
                     >
                       <option>AND</option>
                       <option>NOT</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">{isClient ? t("attribute") : "Attribute"}</label>
+                    <label className={`text-sm font-medium ${darkMode ? "text-custom-zinc-400" : "text-custom-zinc-600"}`}>{isClient ? t("attribute") : "Attribute"}</label>
                     <select
                       value={row.attribute}
                       onChange={(e) => handleRowChange(row.id, { attribute: e.target.value as any })}
-                      className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"}`}
+                      className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-custom-zinc-600 text-white border-gray-600" : "bg-light-background text-gray-900 border-gray-300"}`}
                     >
                       <option value="Category">{isClient ? t("category") : "Category"}</option>
                       <option value="Name">{isClient ? t("name") : "Name"}</option>
@@ -311,11 +311,11 @@ const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMod
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">{isClient ? t("operator") : "Operator"}</label>
+                    <label className={`text-sm font-medium ${darkMode ? "text-custom-zinc-400" : "text-custom-zinc-600"}`}>{isClient ? t("operator") : "Operator"}</label>
                     <select
                       value={row.operator}
                       onChange={(e) => handleRowChange(row.id, { operator: e.target.value as any })}
-                      className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"}`}
+                      className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-custom-zinc-600 text-white border-gray-600" : "bg-light-background text-gray-900 border-gray-300"}`}
                     >
                       <option value="include">{isClient ? t("include") : "include"}</option>
                       <option value="equal">{isClient ? t("equal") : "equal"}</option>
@@ -324,12 +324,12 @@ const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMod
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">{isClient ? t("value") : "Value"}</label>
+                    <label className={`text-sm font-medium ${darkMode ? "text-custom-zinc-400" : "text-custom-zinc-600"}`}>{isClient ? t("value") : "Value"}</label>
                     {row.attribute === "Category" ? (
                       <select
                         value={row.value}
                         onChange={(e) => handleRowChange(row.id, { value: e.target.value })}
-                        className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"}`}
+                        className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-custom-zinc-600 text-white border-gray-600" : "bg-light-background text-gray-900 border-gray-300"}`}
                       >
                         <option value="">{isClient ? t("select_category") : "Select category"}</option>
                         {categories.map((cat) => (
@@ -342,7 +342,7 @@ const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMod
                         value={row.value}
                         onChange={(e) => handleRowChange(row.id, { value: e.target.value })}
                         placeholder={isClient ? t("enter_attribute", { attribute: row.attribute }) : `Enter ${row.attribute}...`}
-                        className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"}`}
+                        className={`w-full p-2 mt-1 rounded border ${darkMode ? "bg-custom-zinc-600 text-white border-gray-600" : "bg-light-background text-gray-900 border-gray-300"}`}
                       />
                     )}
                   </div>
@@ -352,11 +352,11 @@ const SearchElement = forwardRef<SearchElementRef, Props>(({ components, darkMod
           </div>
 
           <div className="mt-4 flex justify-between items-center">
-            <button onClick={handleAddRow} className={`p-2 rounded flex items-center ${darkMode ? "bg-blue-700 text-white border-gray-600" : "bg-blue-500 text-gray-900 border-gray-300"} text-white`}>
+            <button onClick={handleAddRow} className={`p-2 rounded flex items-center ${darkMode ? "bg-custom-blue-600 text-white border-gray-600 hover:bg-custom-blue-700" : "bg-custom-blue-500 text-gray-900 border-gray-300 hover:bg-custom-blue-600"} text-white`}>
               <Plus size={18} className="mr-1" />
               {isClient ? t("add_condition") : "Add Condition"}
             </button>
-            <button onClick={handleSearch} disabled={isSearching} className={`p-2 px-4 rounded-xl flex items-center gap-2 ${darkMode ? "bg-green-600 hover:bg-green-700" : "bg-green-500 hover:bg-green-600"} text-white disabled:bg-gray-400`}>
+            <button onClick={handleSearch} disabled={isSearching} className={`p-2 px-4 rounded-xl flex items-center gap-2 ${darkMode ? "bg-custom-green-600 hover:bg-custom-green-700" : "bg-custom-green-500 hover:bg-custom-green-600"} text-white disabled:bg-gray-400`}>
               {isSearching ? <Spinner size="sm" /> : <Search size={18} />}
               {isSearching ? (isClient ? t("searching") : "Searching...") : (isClient ? t("search") : "Search")}
             </button>

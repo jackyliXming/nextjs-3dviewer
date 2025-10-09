@@ -48,7 +48,7 @@ export default function ModelManager({
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 flex justify-center">
-        <Image src="/Type=Full.svg" alt="Type Full" width={200} height={50} />
+        <Image src="/Type=Full.svg" alt="Type Full" width={200} height={50} className={darkMode ? "dark-mode-svg" : ""} />
       </div>
 
       <div className="flex flex-col justify-center items-center gap-2 mt-2 px-4">
@@ -68,7 +68,7 @@ export default function ModelManager({
           </label>
         <button
           className={`w-full px-6 py-2 rounded-xl font-medium cursor-pointer
-            ${darkMode ? "bg-dark-danger text-white hover:bg-dark-danger-300" : "bg-light-danger text-white hover:bg-light-danger-400"} transition-colors duration-200`}
+            ${darkMode ? "bg-custom-gomorered-500 hover:bg-custom-gomorered-600 text-white " : "bg-light-danger text-white hover:bg-light-danger-400"} transition-colors duration-200`}
           onClick={deleteAllModels}
         >
           {isClient ? t("delete_all_models") : "Delete All Models"}
@@ -101,7 +101,7 @@ export default function ModelManager({
                   {isClient ? t("fragment") : "Fragment"}
                 </button>
                 <button
-                  className={`${darkMode ? "bg-dark-danger text-white hover:bg-dark-danger-300" : "bg-light-danger text-white hover:bg-light-danger-400"} px-2 py-1 rounded text-xs transition-colors duration-200`}
+                  className={`${darkMode ? "bg-custom-gomorered-500 hover:bg-custom-gomorered-600 text-white" : "bg-light-danger text-white hover:bg-light-danger-400"} px-2 py-1 rounded text-xs transition-colors duration-200`}
                   onClick={() => deleteSelectedModel(model)}
                 >
                   {isClient ? t("delete") : "Delete"}

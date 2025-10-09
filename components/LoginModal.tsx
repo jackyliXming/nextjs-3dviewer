@@ -29,7 +29,7 @@ export default function LoginModal({ onClose, onSwitchToRegister }: LoginModalPr
                         type="password"
                         startContent={<Lock className="text-gray-400" />}
                     />
-          <Button color="primary" className="w-full">
+          <Button color="primary" className="w-full" type="submit">
             Login
           </Button>
         </form>

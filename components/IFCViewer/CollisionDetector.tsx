@@ -488,7 +488,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4">
             {/* Group A */}
-            <div className={`p-4 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-200"} flex flex-col gap-2`}>
+            <div className={`p-4 rounded-xl ${darkMode ? "bg-zinc-700" : "bg-zinc-300"} flex flex-col gap-2`}>
               <h3 className="font-bold">{isClient ? t("group_a") : "Group A"} ({getGroupItemCount(groupA)} {isClient ? t("items") : "items"})</h3>
               <div className="flex flex-col gap-1 text-sm">
                 {selectedCategoriesA.map(sc => (
@@ -502,7 +502,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
                 ref={selectARef}
                 onChange={(e) => handleAddCategoryToGroup(e.target.value, setGroupA, setSelectedCategoriesA)}
                 disabled={isLoading}
-                className={`w-full p-1 rounded text-sm ${darkMode ? "bg-gray-600 text-white" : "bg-white text-black"}`}
+                className={`w-full p-1 rounded text-sm ${darkMode ? "bg-zinc-500 text-white" : "bg-zinc-100 text-black"}`}
               >
                 <option value="">{isClient ? t("add_category_to_group") : "Add category to group..."}</option>
                 {availableCategoriesA.map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -511,7 +511,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
                 <button
                   onClick={() => handleAddSelectionToGroup(setGroupA, setSelectedCategoriesA)}
                   disabled={isLoading}
-                  className={`w-full px-3 py-1 rounded text-white text-sm font-semibold ${darkMode ? "bg-green-600 hover:bg-green-700" : "bg-green-500 hover:bg-green-600"} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`w-full px-3 py-1 rounded text-white text-sm font-semibold ${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {isClient ? t("add_selection") : "Add Selection"}
                 </button>
@@ -522,7 +522,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
                     if(selectARef.current) selectARef.current.selectedIndex = 0;
                   }}
                   disabled={isLoading}
-                  className={`w-full px-3 py-1 rounded text-white text-sm font-semibold ${darkMode ? "bg-red-600 hover:bg-red-700" : "bg-red-500 hover:bg-red-600"} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`w-full px-3 py-1 rounded text-white text-sm font-semibold ${darkMode ? "bg-custom-gomorered-500 hover:bg-custom-gomorered-600" : "bg-custom-gomorered-600 hover:bg-custom-gomorered-700"} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {isClient ? t("clear") : "Clear"}
                 </button>
@@ -530,7 +530,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
             </div>
 
             {/* Group B */}
-            <div className={`p-4 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-200"} flex flex-col gap-2`}>
+            <div className={`p-4 rounded-xl ${darkMode ? "bg-zinc-700" : "bg-zinc-300"} flex flex-col gap-2`}>
               <h3 className="font-bold">{isClient ? t("group_b") : "Group B"} ({getGroupItemCount(groupB)} {isClient ? t("items") : "items"})</h3>
               <div className="flex flex-col gap-1 text-sm">
                 {selectedCategoriesB.map(sc => (
@@ -544,7 +544,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
                 ref={selectBRef}
                 onChange={(e) => handleAddCategoryToGroup(e.target.value, setGroupB, setSelectedCategoriesB)}
                 disabled={isLoading}
-                className={`w-full p-1 rounded text-sm ${darkMode ? "bg-gray-600 text-white" : "bg-white text-black"}`}
+                className={`w-full p-1 rounded text-sm ${darkMode ? "bg-zinc-500 text-white" : "bg-zinc-100 text-black"}`}
               >
                 <option value="">{isClient ? t("add_category_to_group") : "Add category to group..."}</option>
                 {availableCategoriesB.map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -553,7 +553,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
                 <button
                   onClick={() => handleAddSelectionToGroup(setGroupB, setSelectedCategoriesB)}
                   disabled={isLoading}
-                  className={`w-full px-3 py-1 rounded text-white text-sm font-semibold ${darkMode ? "bg-green-600 hover:bg-green-700" : "bg-green-500 hover:bg-green-600"} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`w-full px-3 py-1 rounded text-white text-sm font-semibold ${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {isClient ? t("add_selection") : "Add Selection"}
                 </button>
@@ -564,7 +564,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
                     if(selectBRef.current) selectBRef.current.selectedIndex = 0;
                   }}
                   disabled={isLoading}
-                  className={`w-full px-3 py-1 rounded text-white text-sm font-semibold ${darkMode ? "bg-red-600 hover:bg-red-700" : "bg-red-500 hover:bg-red-600"} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`w-full px-3 py-1 rounded text-white text-sm font-semibold ${darkMode ? "bg-custom-gomorered-500 hover:bg-custom-gomorered-600" : "bg-custom-gomorered-600 hover:bg-custom-gomorered-700"} ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {isClient ? t("clear") : "Clear"}
                 </button>
@@ -575,7 +575,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
           <button
             onClick={handleDetectCollision}
             disabled={isLoading || getGroupItemCount(groupA) === 0 || getGroupItemCount(groupB) === 0}
-            className={`w-full px-4 py-2 rounded text-white font-semibold ${darkMode ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-500 hover:bg-blue-600"} ${isLoading || getGroupItemCount(groupA) === 0 || getGroupItemCount(groupB) === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`w-full px-4 py-2 rounded text-white font-semibold ${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} ${isLoading || getGroupItemCount(groupA) === 0 || getGroupItemCount(groupB) === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             {isLoading ? (isClient ? t("detecting") : "Detecting...") : (isClient ? t("detect_collisions") : "Detect Collisions")}
           </button>
@@ -584,7 +584,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
             <div>
               <p className="text-sm text-center mb-1">{status}</p>
               <div className="w-full bg-gray-600 rounded-xl h-2.5">
-                <div className="bg-blue-600 h-2.5 rounded-xl" style={{ width: `${progress}%` }}></div>
+                <div className="bg-custom-blue-500 h-2.5 rounded-xl" style={{ width: `${progress}%` }}></div>
               </div>
               <p className="text-sm text-center mt-1">{itemsProcessed} / {totalItems}</p>
             </div>

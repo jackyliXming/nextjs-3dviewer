@@ -58,7 +58,7 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
       <div className={`flex flex-col justify-between items-center p-2 ${darkMode ? "bg-gray-900 border-r border-gray-700" : "bg-indigo-400 border-r border-indigo-500"} text-white z-30`}>
         <div className="flex flex-col items-center">
           <div className="p-2 w-full flex justify-center">
-            <Image src="/Logo.svg" alt="Logo" width={40} height={40} />
+            <Image src="/Frame1.svg" alt="Logo" width={40} height={40} className={darkMode ? "dark-mode-svg" : ""} />
           </div>
           {tabs.map((child) => (
             child.props.name && (
@@ -96,7 +96,7 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
         </div>
       </div>
       <div
-        className={`transition-all duration-300 ${darkMode ? "bg-neutral-800 border-r border-gray-700" : "bg-neutral-200 border-r border-gray-300"} ${
+        className={`transition-all duration-300 ${darkMode ? "bg-gray-800 border-r border-gray-700" : "bg-zinc-200 border-r border-gray-300"} ${
           isOpen ? "w-80 p-4" : "w-0"
         } overflow-y-auto overflow-x-hidden`}
       >
