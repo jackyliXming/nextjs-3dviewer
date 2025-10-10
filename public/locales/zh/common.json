@@ -171,5 +171,12 @@
   "visibility": "可見性",
   "selection": "選取",
   "tools": "工具",
-  "login": "登入"
+  "login": "登入",
+  "some_models_already_exist": "部分模型已存在。",
+  "projects": "專案",
+  "select_models": "選擇模型",
+  "focus": "聚焦",
+  "hide": "隱藏",
+  "toggle_ghost": "切換半透明",
+  "project": "專案"
 }

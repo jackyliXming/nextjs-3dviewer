@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { Tooltip } from "@heroui/react";
-import { Upload, Camera, Search, MessageSquare, Info, AlertTriangle, HelpCircle } from "lucide-react";
+import { Upload, Camera, Search, MessageSquare, Info, AlertTriangle, HelpCircle, Folder } from "lucide-react";
 import Image from "next/image";
+import { useTranslation } from "react-i18next";
 
 interface SideBarProps {
   darkMode: boolean;
@@ -17,6 +18,7 @@ interface SideBarProps {
 }
 
 const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, languageSwitcher, loginButton, onToggle, onToggleDescription, isDescriptionOpen }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
@@ -48,6 +50,8 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
         return <Info size={20} />;
       case "Collision":
         return <AlertTriangle size={20} />;
+      case "Projects":
+        return <Folder size={20} />;
       default:
         return "?";
     }
@@ -62,7 +66,7 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
           </div>
           {tabs.map((child) => (
             child.props.name && (
-              <Tooltip key={child.props.name} content={child.props.name} placement="right">
+              <Tooltip key={child.props.name} content={t(child.props.name.toLowerCase())} placement="right">
                 <button
                   onClick={() => handleTabClick(child.props.name)}
                   className={`p-3 my-2 rounded-xl ${activeTab === child.props.name ? (darkMode ? "bg-gray-700" : "bg-indigo-600") : ""}`}
@@ -74,7 +78,7 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
           ))}
         </div>
         <div className="flex flex-col items-center space-y-4">
-            <Tooltip content="Description" placement="right">
+            <Tooltip content={t("description")} placement="right">
               <button
                 onClick={onToggleDescription}
                 className={`p-3 my-2 rounded-xl ${
@@ -98,7 +102,7 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
       <div
         className={`transition-all duration-300 ${darkMode ? "bg-gray-800 border-r border-gray-700" : "bg-zinc-200 border-r border-gray-300"} ${
           isOpen ? "w-80 p-4" : "w-0"
-        } overflow-y-auto overflow-x-hidden`}
+        } overflow-visible`}
       >
         {isOpen && tabs.find((child) => child.props.name === activeTab)}
       </div>

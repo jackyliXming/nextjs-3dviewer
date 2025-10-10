@@ -171,5 +171,12 @@
   "visibility": "Visibility",
   "selection": "Selection",
   "tools": "Tools",
-  "login": "Login"
+  "login": "Login",
+  "focus": "Focus",
+  "hide": "Hide",
+  "toggle_ghost": "Toggle Ghost",
+  "projects": "Projects",
+  "models": "Models",
+  "select_models": "Select Models",
+  "project": "Project"
 }

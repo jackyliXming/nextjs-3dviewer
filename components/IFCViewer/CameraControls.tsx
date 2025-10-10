@@ -115,13 +115,13 @@ export default function CameraControls({
           {/* Projection */}
           <div className="flex flex-col items-center gap-2">
             <span className="font-medium">{isClient ? t("projection") : "Projection"}</span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-center">
               <button
                 onClick={() => handleProjectionChange("Perspective")}
                 disabled={projection === "Perspective"}
-                className={`px-3 py-2 rounded-xl transition-colors duration-200
+                className={`px-3 py-2 rounded-xl transition-colors duration-200 w-28 flex justify-center
                   ${projection === "Perspective"
-                    ? (darkMode ? "bg-dark-content4 text-gray-400 cursor-not-allowed" : "bg-gray-400 text-gray-200 cursor-not-allowed")
+                    ? (darkMode ? "bg-dark-content4 text-gray-400 cursor-not-allowed" : "bg-light-default-200 text-gray-400 cursor-not-allowed")
                     : (darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus")}`}
               >
                 {isClient ? t("perspective") : "Perspective"}
@@ -139,9 +139,9 @@ export default function CameraControls({
                     setProjection("Orthographic");                  
                   }}
                 disabled={projection === "Orthographic"}
-                className={`px-3 py-2 rounded-xl transition-colors duration-200 cursor-pointer
+                className={`px-3 py-2 rounded-xl transition-colors duration-200 cursor-pointer w-28 flex justify-center
                   ${projection === "Orthographic"
-                    ? (darkMode ? "bg-dark-content4 text-gray-400 cursor-not-allowed" : "bg-gray-400 text-gray-200 cursor-not-allowed")
+                    ? (darkMode ? "bg-dark-content4 text-gray-400 cursor-not-allowed" : "bg-light-default-200 text-gray-400 cursor-not-allowed")
                     : (darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus")}`}
               >
                 {isClient ? t("orthographic") : "Orthographic"}
@@ -184,7 +184,7 @@ export default function CameraControls({
                 <button
                   key={o}
                   onClick={() => handle2DView(o as any)}
-                  className={`px-3 py-1 rounded-xl cursor-pointer ${darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus"} transition-colors duration-200`}
+                  className={`px-3 py-1 rounded-xl cursor-pointer flex justify-center w-16 ${darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus"} transition-colors duration-200`}
                 >
                   {isClient ? t(o) : o.charAt(0).toUpperCase() + o.slice(1)}
                 </button>
@@ -198,7 +198,7 @@ export default function CameraControls({
           <div className="flex flex-col justify-center items-center gap-2">
             <button
               onClick={() => worldRef.current?.camera.fitToItems()}
-              className={`px-3 py-2 rounded-xl cursor-pointer ${darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus"} transition-colors duration-200`}
+              className={`px-3 py-2 rounded-xl cursor-pointer w-full flex justify-center ${darkMode ? "bg-dark-primary text-white hover:bg-dark-focus" : "bg-light-primary text-white hover:bg-light-focus"} transition-colors duration-200`}
             >
               {isClient ? t("fit_to_model") : "Fit to Model"}
             </button>

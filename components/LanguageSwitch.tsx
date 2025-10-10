@@ -1,6 +1,6 @@
 "use client";
 
-import { FC } from "react";
+import { FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@heroui/react";
 
@@ -10,6 +10,11 @@ interface LanguageSwitchProps {
 
 export const LanguageSwitch: FC<LanguageSwitchProps> = ({ className }) => {
   const { i18n } = useTranslation();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const toggleLanguage = () => {
     const newLang = i18n.language === "en" ? "zh" : "en";
@@ -18,7 +23,7 @@ export const LanguageSwitch: FC<LanguageSwitchProps> = ({ className }) => {
 
   return (
     <Button onClick={toggleLanguage} className={className}>
-      {i18n.language.toUpperCase()}
+      {isClient ? i18n.language.toUpperCase() : ""}
     </Button>
   );
 };

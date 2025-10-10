@@ -27,6 +27,7 @@ import { Tooltip } from "@heroui/react";
 import DescriptionPanel from "@/components/IFCViewer/DescriptionPanel";
 import LoginModal from "@/components/LoginModal";
 import RegisterModal from "@/components/RegisterModal";
+import ProjectsPanel from "@/components/IFCViewer/ProjectsPanel";
 
 interface UploadedModel {
   id: string;
@@ -1100,6 +1101,9 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
           </Tooltip>
         }
       >
+        <SideBarTab name="Projects">
+          <ProjectsPanel darkMode={darkMode} uploadedModels={uploadedModels} />
+        </SideBarTab>
         <SideBarTab name="Models">
           <ModelManager
             darkMode={darkMode}
