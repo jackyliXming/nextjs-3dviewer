@@ -45,6 +45,8 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
   const [bcfTopics, setBcfTopics] = useState<OBC.BCFTopics | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<OBC.Topic | null>(null);
   const [topicsList, setTopicsList] = useState<OBC.Topic[]>([]);
+  const [sortCriteria, setSortCriteria] = useState("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "dsc">("dsc");
   const [collapsed, setCollapsed] = useState(false);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
@@ -358,7 +360,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
 
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex flex-col h-full">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-lg font-bold">{isClient ? t("bcf_topics") : "BCF Topics"}</h2>
         <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-700">
@@ -382,7 +384,7 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
                   className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-2 py-1 rounded`}
                   onClick={handleConfirmBcfCreation}
                 >
-                  {isClient ? t("confirm_selection") : "Confirm"}
+                  {isClient ? t("confirm") : "Confirm"}
                 </button>
                 <button
                   className={`${darkMode ? "bg-custom-gomorered-600 hover:bg-custom-gomorered-700" : "bg-custom-gomorered-500 hover:bg-custom-gomorered-600"} text-amber-100 px-2 py-1 rounded`}
@@ -392,28 +394,42 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
                 </button>
               </>
             )}
-            <button
-              className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-2 py-1 rounded ${!selectedTopic ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={downloadBCF}
-              disabled={!selectedTopic}
-            >
-              {isClient ? t("export") : "Export"}
-            </button>
-            <button
-              className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-2 py-1 rounded`}
-              onClick={loadBCF}
-            >
-              {isClient ? t("load") : "Load"}
-            </button>
           </div>
 
           <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
             {/* Topics List */}
-            <div className={`flex-1 overflow-y-auto border ${darkMode ? "border-zinc-600" : "border-zinc-400"} p-1`}>
-              <h5 className="font-semibold mb-1 fixed">{isClient ? t("topics") : "Topics"}</h5>
-              <br/>
+            <div className={`flex-1 overflow-y-auto border rounded ${darkMode ? "border-zinc-600" : "border-zinc-400"} p-1`}>
+              <div className="flex justify-between items-center mb-2">
+                <h5 className="font-semibold">{isClient ? t("topics") : "Topics"}</h5>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={sortCriteria}
+                    onChange={(e) => setSortCriteria(e.target.value)}
+                    className={`p-1 rounded text-xs ${darkMode ? "bg-zinc-700" : "bg-zinc-200"}`}
+                  >
+                    <option value="date">Create Time</option>
+                    <option value="modifiedDate">Last Modify Time</option>
+                    <option value="title">Title</option>
+                  </select>
+                  <button
+                    onClick={() => setSortOrder(sortOrder === "asc" ? "dsc" : "asc")}
+                    className="p-1 rounded text-xs"
+                  >
+                    {sortOrder === "asc" ? "▲" : "▼"}
+                  </button>
+                </div>
+              </div>
               <ul>
-                {topicsList.map((topic) => (
+                {topicsList
+                  .sort((a, b) => {
+                    const aVal = sortCriteria === 'title' ? a.title : new Date((a as any)[sortCriteria]).getTime();
+                    const bVal = sortCriteria === 'title' ? b.title : new Date((b as any)[sortCriteria]).getTime();
+                    if (sortOrder === "asc") {
+                      return aVal > bVal ? 1 : -1;
+                    }
+                    return aVal < bVal ? 1 : -1;
+                  })
+                  .map((topic) => (
                   <li
                     key={topic.guid}
                     onClick={(e) => {
@@ -424,7 +440,10 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
                       selectedTopic?.guid === topic.guid ? (darkMode ? "bg-zinc-600" : "bg-zinc-300") : ""
                     }`}
                   >
-                    <span className="truncate" title={topic.title}>{topic.title}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="truncate" title={topic.title}>{topic.title}</span>
+                      <span className="text-xs text-gray-500">{new Date(topic.creationDate).toLocaleDateString()}</span>
+                    </div>
                     <button
                       onClick={(e) => deleteTopic(e, topic.guid)}
                       className="text-custom-gomorered-400 hover:text-custom-gomorered-500 font-bold px-2"
@@ -435,82 +454,78 @@ const BCFTopics: React.FC<BCFTopicsProps> = ({ components, world, darkMode, bcfM
                 ))}
               </ul>
             </div>
-
-            {/* Topic Details */}
-            <div className={`flex-1 overflow-y-auto border ${darkMode ? "border-zinc-600" : "border-zinc-400"} p-1`}>
+          </div>
+          {selectedTopic && (
+            <div className={`absolute left-full h-screen ml-4 w-80 p-4 z-10 rounded-lg shadow-lg border ${darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-zinc-200 border-gray-300 text-black"} h-full`}>
               <div className="flex justify-between items-center">
                 <h5 className="font-semibold mb-1">{isClient ? t("details") : "Details"}</h5>
-                {selectedTopic && (
-                  <div className="flex gap-2">
+                <div className="flex gap-2">
                   <button
                     onClick={() => setEditModalOpen(true)}
                     className="bg-primary text-white px-2 py-1 rounded text-xs"
                   >
                     {isClient ? t("edit") : "Edit"}
                   </button>
-                  </div>
-                )}
-              </div>
-              {selectedTopic ? (
-                <div className="text-sm space-y-1">
-                  <p><strong>{isClient ? t("title") : "Title"}:</strong> {selectedTopic.title}</p>
-                  <p><strong>{isClient ? t("description") : "Description"}:</strong> {selectedTopic.description}</p>
-                  <p><strong>{isClient ? t("type") : "Type"}:</strong> {selectedTopic.type}</p>
-                  <p><strong>{isClient ? t("priority") : "Priority"}:</strong> {selectedTopic.priority}</p>
-                  <p><strong>{isClient ? t("stage") : "Stage"}:</strong> {selectedTopic.stage}</p>
-                  <p><strong>{isClient ? t("labels") : "Labels"}:</strong> {Array.from(selectedTopic.labels).join(", ")}</p>
-                  <p><strong>{isClient ? t("assigned_to") : "Assigned To"}:</strong> {selectedTopic.assignedTo || t("unassigned")}</p>
-                  <p><strong>{isClient ? t("due_date") : "Due Date"}:</strong> {selectedTopic.dueDate?.toLocaleDateString()}</p>
-                  <p><strong>{isClient ? t("status") : "Status"}:</strong> {selectedTopic.status || t("no_status")}</p>
-                  <p><strong>Viewpoints:</strong> {Array.from(selectedTopic.viewpoints).join(", ")}</p>
-                  <div className="flex justify-end mt-2">
-                    <button
-                      onClick={() => setHistoryModalOpen(true)}
-                      className="bg-zinc-500 text-white px-2 py-1 rounded text-xs"
-                    >
-                      {isClient ? t("history") : "History"}
-                    </button>
-                  </div>
-                  <div className="mt-4 pt-2 border-t border-gray-600">
-                    <h6 className="font-semibold mb-2">{isClient ? t("comments") : "Comments"}</h6>
-                    <div className="space-y-2 max-h-40 overflow-y-auto mb-2">
-                      {selectedTopic.comments && Array.from(selectedTopic.comments.values()).map(comment => (
-                        <div key={comment.guid} className={`p-2 rounded ${darkMode ? "bg-zinc-500" : "bg-zinc-300"}`}>
-                          <p className="font-bold">{comment.author}</p>
-                          <p>{comment.comment}</p>
-                          <p className="text-xs text-zinc-400">{new Date(comment.date).toLocaleString()}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <form onSubmit={handleAddComment}>
-                      <div className="flex flex-col gap-2">
-                        <input
-                          type="text"
-                          placeholder={isClient ? t("your_name") : "Your name"}
-                          value={newComment.name}
-                          onChange={(e) => setNewComment({ ...newComment, name: e.target.value })}
-                          className={`w-full border ${darkMode ? "bg-zinc-700 border-zinc-500" : "bg-zinc-50 border-zinc-300"} rounded-xl shadow-sm p-2`}
-                          required
-                        />
-                        <textarea
-                          placeholder={isClient ? t("add_a_comment") : "Add a comment..."}
-                          value={newComment.comment}
-                          onChange={(e) => setNewComment({ ...newComment, comment: e.target.value })}
-                          className={`w-full border ${darkMode ? "bg-zinc-700 border-zinc-500" : "bg-zinc-50 border-zinc-300"} rounded-xl shadow-sm p-2`}
-                          required
-                        />
-                        <button type="submit" className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded self-end`}>
-                          {isClient ? t("add_comment") : "Add Comment"}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
+                  <button onClick={() => setSelectedTopic(null)} className="text-2xl font-bold">&times;</button>
                 </div>
-              ) : (
-                <p className="text-sm text-gray-500">{isClient ? t("no_topic_selected") : "No topic selected"}</p>
-              )}
+              </div>
+              <div className="text-sm space-y-1 overflow-y-auto h-full">
+                <p><strong>{isClient ? t("title") : "Title"}:</strong> {selectedTopic.title}</p>
+                <p><strong>{isClient ? t("description") : "Description"}:</strong> {selectedTopic.description}</p>
+                <p><strong>{isClient ? t("type") : "Type"}:</strong> {selectedTopic.type}</p>
+                <p><strong>{isClient ? t("priority") : "Priority"}:</strong> {selectedTopic.priority}</p>
+                <p><strong>{isClient ? t("stage") : "Stage"}:</strong> {selectedTopic.stage}</p>
+                <p><strong>{isClient ? t("labels") : "Labels"}:</strong> {Array.from(selectedTopic.labels).join(", ")}</p>
+                <p><strong>Create Time:</strong> {new Date(selectedTopic.creationDate).toLocaleString()}</p>
+                <p><strong>{isClient ? t("assigned_to") : "Assigned To"}:</strong> {selectedTopic.assignedTo || t("unassigned")}</p>
+                <p><strong>{isClient ? t("due_date") : "Due Date"}:</strong> {selectedTopic.dueDate?.toLocaleDateString()}</p>
+                <p><strong>{isClient ? t("status") : "Status"}:</strong> {selectedTopic.status || t("no_status")}</p>
+                <p><strong>Viewpoints:</strong> {Array.from(selectedTopic.viewpoints).join(", ")}</p>
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => setHistoryModalOpen(true)}
+                    className="bg-zinc-500 text-white px-2 py-1 rounded text-xs"
+                  >
+                    {isClient ? t("history") : "History"}
+                  </button>
+                </div>
+                <div className="mt-4 pt-2 border-t border-gray-600">
+                  <h6 className="font-semibold mb-2">{isClient ? t("comments") : "Comments"}</h6>
+                  <div className="space-y-2 max-h-40 overflow-y-auto mb-2">
+                    {selectedTopic.comments && Array.from(selectedTopic.comments.values()).map(comment => (
+                      <div key={comment.guid} className={`p-2 rounded ${darkMode ? "bg-zinc-500" : "bg-zinc-300"}`}>
+                        <p className="font-bold">{comment.author}</p>
+                        <p>{comment.comment}</p>
+                        <p className="text-xs text-zinc-400">{new Date(comment.date).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <form onSubmit={handleAddComment}>
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        placeholder={isClient ? t("your_name") : "Your name"}
+                        value={newComment.name}
+                        onChange={(e) => setNewComment({ ...newComment, name: e.target.value })}
+                        className={`w-full border ${darkMode ? "bg-zinc-700 border-zinc-500" : "bg-zinc-50 border-zinc-300"} rounded-xl shadow-sm p-2`}
+                        required
+                      />
+                      <textarea
+                        placeholder={isClient ? t("add_a_comment") : "Add a comment..."}
+                        value={newComment.comment}
+                        onChange={(e) => setNewComment({ ...newComment, comment: e.target.value })}
+                        className={`w-full border ${darkMode ? "bg-zinc-700 border-zinc-500" : "bg-zinc-50 border-zinc-300"} rounded-xl shadow-sm p-2`}
+                        required
+                      />
+                      <button type="submit" className={`${darkMode ? "bg-dark-primary hover:bg-dark-focus" : "bg-light-primary hover:bg-light-focus"} text-amber-100 px-4 py-2 rounded self-end`}>
+                        {isClient ? t("add_comment") : "Add Comment"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
 

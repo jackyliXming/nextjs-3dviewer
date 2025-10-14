@@ -178,5 +178,14 @@
   "focus": "聚焦",
   "hide": "隱藏",
   "toggle_ghost": "切換半透明",
-  "project": "專案"
+  "project": "專案",
+  "ai_panel": "AI 面板",
+  "ai": "AI",
+  "collision": "碰撞",
+  "bcf": "BCF",
+  "info": "資訊",
+  "condition": "條件",
+  "tool_description": "工具說明",
+  "no_tool_selected": "未選取工具",
+  "clear_colors": "清除顏色"
 }

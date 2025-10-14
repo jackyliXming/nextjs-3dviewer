@@ -480,7 +480,7 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
   const availableCategoriesB = categories.filter(cat => !selectedCategoriesB.some(sc => sc.name === cat));
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex flex-col h-full">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">{isClient ? t("collision_detection") : "Collision Detection"}</h2>
           <button onClick={handleClose} className="text-2xl font-bold">&times;</button>
@@ -589,22 +589,28 @@ const CollisionDetector: React.FC<CollisionDetectorProps> = ({ isOpen, onClose, 
               <p className="text-sm text-center mt-1">{itemsProcessed} / {totalItems}</p>
             </div>
           )}
-
-          <div className="overflow-y-auto max-h-60">
-            <p>{isClient ? t("results_collisions_found", { count: results.length }) : `Results: ${results.length} collisions found.`}</p>
-            {results.map((collision, index) => (
-              <div 
-                key={index} 
-                className={`p-2 border-b cursor-pointer ${darkMode ? "border-gray-700 hover:bg-gray-700" : "border-gray-300 hover:bg-gray-100"}`}
-                onClick={() => handleCollisionClick(collision)}
-              >
-                <p>{isClient ? t("collision_index", { index: index + 1 }) : `Collision ${index + 1}:`}</p>
-                <p className="text-sm">{isClient ? t("item_a", { itemId: collision.item1.itemId, modelId: collision.item1.modelId }) : `Item A: ${collision.item1.itemId} (Model: ${collision.item1.modelId})`}</p>
-                <p className="text-sm">{isClient ? t("item_b", { itemId: collision.item2.itemId, modelId: collision.item2.modelId }) : `Item B: ${collision.item2.itemId} (Model: ${collision.item2.modelId})`}</p>
-              </div>
-            ))}
-          </div>
         </div>
+        {results.length > 0 && (
+          <div className={`absolute left-full h-screen ml-4 w-80 p-4 z-10 rounded-lg shadow-lg border ${darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-zinc-200 border-gray-300 text-black"} h-full`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">{isClient ? t("results_collisions_found", { count: results.length }) : `Results: ${results.length} collisions found.`}</h3>
+              <button onClick={() => setResults([])} className="text-2xl font-bold">&times;</button>
+            </div>
+            <div className="overflow-y-auto max-h-60">
+              {results.map((collision, index) => (
+                <div 
+                  key={index} 
+                  className={`p-2 border-b cursor-pointer ${darkMode ? "border-gray-700 hover:bg-gray-700" : "border-gray-300 hover:bg-gray-100"}`}
+                  onClick={() => handleCollisionClick(collision)}
+                >
+                  <p>{isClient ? t("collision_index", { index: index + 1 }) : `Collision ${index + 1}:`}</p>
+                  <p className="text-sm">{isClient ? t("item_a", { itemId: collision.item1.itemId, modelId: collision.item1.modelId }) : `Item A: ${collision.item1.itemId} (Model: ${collision.item1.modelId})`}</p>
+                  <p className="text-sm">{isClient ? t("item_b", { itemId: collision.item2.itemId, modelId: collision.item2.modelId }) : `Item B: ${collision.item2.itemId} (Model: ${collision.item2.modelId})`}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
   );
 };

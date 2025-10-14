@@ -28,6 +28,8 @@ import DescriptionPanel from "@/components/IFCViewer/DescriptionPanel";
 import LoginModal from "@/components/LoginModal";
 import RegisterModal from "@/components/RegisterModal";
 import ProjectsPanel from "@/components/IFCViewer/ProjectsPanel";
+import AIPanel from "@/components/IFCViewer/AIPanel";
+import { useAppContext } from "@/contexts/AppContext";
 
 interface UploadedModel {
   id: string;
@@ -54,7 +56,8 @@ type TResultGroup = {
   isEditing: boolean;
 };
 
-export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode: boolean, toggleTheme: () => void }) {
+export default function IFCViewerContainer() {
+  const { darkMode, toggleTheme, uploadedModels, setUploadedModels, viewerApi } = useAppContext();
   const viewerRef = useRef<HTMLDivElement>(null);
   const componentsRef = useRef<OBC.Components | null>(null);
   const fragmentsRef = useRef<OBC.FragmentsManager | null>(null);
@@ -72,7 +75,6 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
 
   const [progress, setProgress] = useState<number>(0);
   const [showProgressModal, setShowProgressModal] = useState(false);
-  const [uploadedModels, setUploadedModels] = useState<UploadedModel[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -134,10 +136,10 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
 
     const init = async () => {
       const components = new OBC.Components();
-      componentsRef.current = components;
-
       const worlds = components.get(OBC.Worlds);
       const world = worlds.create();
+      viewerApi.init(components, world);
+      componentsRef.current = components;
       worldRef.current = world;
 
       const scene = new OBC.SimpleScene(components);
@@ -752,29 +754,26 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
   
   const onIsolate = async () => {
     const highlighter = componentsRef.current?.get(OBCF.Highlighter);
-    const hider = componentsRef.current?.get(OBC.Hider);
-    if (!highlighter || !hider) return;
+    if (!highlighter) return;
     const selection = highlighter.selection.select;
-    await hider.set(false);
-    await hider.set(true, selection);
+    const elementIds = Object.keys(selection).flatMap(modelId => 
+      Array.from(selection[modelId]).map(expressId => `${modelId}-${expressId}`)
+    );
+    await viewerApi.isolateElements(elementIds);
   };
 
   const onFocus = async () => {
-    const camera = worldRef.current?.camera;
     const highlighter = componentsRef.current?.get(OBCF.Highlighter);
-    if (!camera || !highlighter) return;
+    if (!highlighter) return;
     const selection = highlighter.selection.select;
-    if (Object.keys(selection).length > 0) {
-      await camera.fitToItems(selection, 0.5);
-    } else {
-      await camera.fitToItems();
-    }
+    const elementIds = Object.keys(selection).flatMap(modelId => 
+      Array.from(selection[modelId]).map(expressId => `${modelId}-${expressId}`)
+    );
+    await viewerApi.zoomToElement(elementIds);
   };
   
   const onShow = async () => {
-    const hider = componentsRef.current?.get(OBC.Hider);
-    if (!hider) return;
-    await hider.set(true);
+    await viewerApi.showAllElements();
     setInfoOpen(false);
     setSelectedModelId(null);
     setSelectedLocalId(null);
@@ -1103,6 +1102,9 @@ export default function IFCViewerContainer({ darkMode, toggleTheme }: { darkMode
       >
         <SideBarTab name="Projects">
           <ProjectsPanel darkMode={darkMode} uploadedModels={uploadedModels} />
+        </SideBarTab>
+        <SideBarTab name="AI">
+          <AIPanel darkMode={darkMode} />
         </SideBarTab>
         <SideBarTab name="Models">
           <ModelManager

@@ -5,6 +5,7 @@ import clsx from "clsx";
 
 import { Providers } from "./providers";
 import I18nProvider from "./i18n-provider";
+import { AppProvider } from "@/contexts/AppContext";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
@@ -43,9 +44,11 @@ export default function RootLayout({
       >
         <I18nProvider>
           <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
-            <div className="relative flex flex-col h-screen">
-                {children}
-            </div>
+            <AppProvider>
+              <div className="relative flex flex-col h-screen">
+                  {children}
+              </div>
+            </AppProvider>
           </Providers>
         </I18nProvider>
       </body>

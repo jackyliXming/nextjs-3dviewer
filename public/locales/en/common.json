@@ -178,5 +178,14 @@
   "projects": "Projects",
   "models": "Models",
   "select_models": "Select Models",
-  "project": "Project"
+  "project": "Project",
+  "ai_panel": "AI Panel",
+  "ai": "AI",
+  "collision": "Collision",
+  "bcf": "BCF",
+  "info": "Info",
+  "condition": "Condition",
+  "tool_description": "Tool Description",
+  "no_tool_selected": "No tool selected",
+  "clear_colors": "Clear Colors"
 }

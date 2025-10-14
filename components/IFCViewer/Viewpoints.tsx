@@ -100,19 +100,13 @@ export default function Viewpoints({
       {currentView && (
         <div className="mb-2 flex flex-col gap-1">
           <button
-            className={`py-1 rounded cursor-pointer text-white ${darkMode ? 'bg-dark-primary hover:bg-dark-focus' : 'bg-light-primary hover:bg-light-focus'}`}
+            className={`py-1 rounded cursor-pointer text-white ${darkMode ? 'bg-custom-purple-600 hover:bg-custom-purple-700' : 'bg-custom-purple-500 hover:bg-custom-purple-600'}`}
             onClick={async () => {
               await updateViewpointCamera(currentView.viewpoint);
               await refreshSnapshot(currentView);
             }}
           >
             {isClient ? t("update_camera_snapshot") : "Update Camera & Snapshot"}
-          </button>
-          <button
-            className={`py-1 rounded cursor-pointer text-white ${darkMode ? 'bg-custom-purple-600 hover:bg-custom-purple-700' : 'bg-custom-purple-500 hover:bg-custom-purple-600'}`}
-            onClick={() => setWorldCamera(currentView.viewpoint)}
-          >
-            {isClient ? t("set_world_camera") : "Set World Camera"}
           </button>
         </div>
       )}

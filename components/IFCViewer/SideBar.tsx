@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Tooltip } from "@heroui/react";
-import { Upload, Camera, Search, MessageSquare, Info, AlertTriangle, HelpCircle, Folder } from "lucide-react";
+import { Upload, Camera, Search, MessageSquare, Info, AlertTriangle, HelpCircle, Folder, Bot } from "lucide-react";
 import Image from "next/image";
 import { useTranslation } from "react-i18next";
 
@@ -52,6 +52,8 @@ const SideBar: React.FC<SideBarProps> = ({ darkMode, children, themeSwitcher, la
         return <AlertTriangle size={20} />;
       case "Projects":
         return <Folder size={20} />;
+      case "AI":
+        return <Bot size={20} />;
       default:
         return "?";
     }
